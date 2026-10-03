@@ -1,0 +1,1535 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<title>ChatGPT</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --font:"Vazirmatn","Segoe UI",Tahoma,system-ui,-apple-system,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --ease:cubic-bezier(.2,.7,.2,1);
+  --blue:#3b82f6;
+}
+[data-theme="dark"]{
+  --bg:#000;--fg:#fff;--fg2:#d2d2d2;--muted:#9a9a9a;
+  --circle:#2c2c2c;--surface:#242424;--card:#323232;--card2:#444;--dlg:#1c1c1c;
+  --border:#262626;--hover:#1d1d1d;--bubble:#2f2f2f;
+  --pill-bg:#36404a;--pill-fg:#4aa3ff;
+  --btn:#fff;--btn-fg:#000;--btn-off:#4a4a4a;
+  --scrim:rgba(0,0,0,.55);--shadow:0 10px 40px rgba(0,0,0,.6);--danger:#ff7b7b;--purple:#9b59b6;
+  color-scheme:dark;
+}
+[data-theme="light"]{
+  --bg:#fff;--fg:#0d0d0d;--fg2:#3d3d3d;--muted:#777;
+  --circle:#f0f0f0;--surface:#f4f4f4;--card:#fff;--card2:#efefef;--dlg:#fff;
+  --border:#e4e4e4;--hover:#f3f3f3;--bubble:#f0f0f0;
+  --pill-bg:#e4effe;--pill-fg:#1a73e8;
+  --btn:#0d0d0d;--btn-fg:#fff;--btn-off:#d0d0d0;
+  --scrim:rgba(0,0,0,.35);--shadow:0 10px 40px rgba(0,0,0,.18);--danger:#c62828;--purple:#9b59b6;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;background:var(--bg)}
+body{font-family:var(--font);color:var(--fg);font-size:16px;line-height:1.7;overflow:hidden;-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent}
+button{font:inherit;color:inherit}
+svg{display:block;flex:none}
+:focus-visible{outline:2px solid var(--fg);outline-offset:2px}
+.theme-anim,.theme-anim *{transition:background-color .3s,color .3s,border-color .3s !important}
+[hidden]{display:none !important}
+
+/* ---------- shell ---------- */
+.app{position:relative;height:100vh;height:100dvh;max-width:720px;margin:0 auto;display:flex;flex-direction:column;overflow:hidden;background:var(--bg)}
+.top{display:flex;align-items:center;gap:8px;padding:calc(14px + env(safe-area-inset-top)) 14px 8px;flex:none}
+.top .spacer{flex:1}
+.circle{width:44px;height:44px;border-radius:50%;border:0;background:var(--circle);color:var(--fg);display:grid;place-items:center;cursor:pointer;flex:none;transition:background .15s,transform .12s}
+.circle:active{transform:scale(.93)}
+.circle.on{background:var(--card2)}
+.plus-pill{height:44px;padding:0 15px;border-radius:22px;border:0;background:var(--pill-bg);color:var(--pill-fg);display:flex;align-items:center;gap:7px;font-size:16px;cursor:pointer;transition:transform .12s}
+.plus-pill:active{transform:scale(.96)}
+.plus-pill b{font-weight:700;direction:ltr}
+.temp-label{font-size:16px;color:var(--fg2);padding:0 8px}
+.view{flex:1;min-height:0;position:relative;display:flex;flex-direction:column}
+.scroll{flex:1;overflow-y:auto;display:flex;flex-direction:column;overscroll-behavior:contain}
+
+/* ---------- empty / suggestions ---------- */
+.empty{flex:1;display:flex;flex-direction:column;justify-content:flex-end;padding:0 26px 14px;animation:fade .35s ease both}
+.temp-note{margin:auto;text-align:center;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:4px}
+.temp-note h2{margin:8px 0 0;font-size:20px;color:var(--fg)}
+.temp-note p{margin:0}
+.sugg{display:flex;flex-direction:column}
+.sugg button{display:flex;align-items:center;gap:14px;height:50px;border:0;background:none;color:var(--fg2);font-size:17px;cursor:pointer;text-align:start;border-radius:12px;transition:opacity .15s}
+.sugg button:active{opacity:.6}
+.sugg svg{color:var(--fg2)}
+
+/* ---------- thread ---------- */
+.thread{width:100%;padding:8px 18px 26px;display:flex;flex-direction:column;gap:24px}
+body.compact .thread{gap:12px}
+.msg{animation:msgIn .3s var(--ease) both}
+.msg.user{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+.bubble{max-width:84%;background:var(--bubble);padding:9px 16px;border-radius:22px;white-space:pre-wrap;overflow-wrap:anywhere}
+.atts{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end;max-width:84%}
+.att-img{width:120px;height:120px;object-fit:cover;border-radius:16px}
+.att-file{display:flex;align-items:center;gap:6px;background:var(--bubble);border-radius:14px;padding:6px 12px;font-size:14px;max-width:100%}
+.att-file span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.msg-time{font-size:12px;color:var(--muted)}
+body.hide-time .msg-time{display:none}
+.msg.ai .actions{display:flex;align-items:center;gap:0;margin-top:4px;margin-inline-start:-8px}
+.msg.streaming .actions{display:none}
+.act{width:34px;height:34px;border-radius:9px;border:0;background:none;color:var(--muted);cursor:pointer;display:grid;place-items:center;transition:background .15s,color .15s}
+.act:hover{background:var(--hover);color:var(--fg)}
+.act.on{color:var(--fg)}.act.on svg{fill:currentColor}
+.actions .msg-time{margin-inline-start:8px}
+.dots{display:flex;gap:5px;align-items:center;height:30px}
+.dots i{width:8px;height:8px;border-radius:50%;background:var(--muted);animation:dot 1.2s infinite ease-in-out}
+.dots i:nth-child(2){animation-delay:.15s}.dots i:nth-child(3){animation-delay:.3s}
+.thinking{color:var(--muted);display:flex;align-items:center;gap:10px}
+
+/* markdown */
+.md{overflow-wrap:anywhere}
+.md>:first-child{margin-top:0}.md>:last-child{margin-bottom:0}
+.md p{margin:0 0 12px}
+.md h2,.md h3,.md h4,.md h5{font-weight:600;line-height:1.5;margin:20px 0 8px}
+.md h2{font-size:1.35em}.md h3{font-size:1.18em}.md h4{font-size:1.06em}.md h5{font-size:1em}
+.md ul,.md ol{margin:0 0 12px;padding-inline-start:24px}
+.md li{margin:3px 0}
+.md blockquote{margin:0 0 12px;padding-inline-start:14px;border-inline-start:3px solid var(--card2);color:var(--fg2)}
+.md hr{border:0;border-top:1px solid var(--border);margin:18px 0}
+.md a{color:inherit;text-decoration:underline;text-underline-offset:3px}
+.md code{font-family:var(--mono);font-size:.88em;background:var(--bubble);padding:2px 6px;border-radius:6px;direction:ltr;unicode-bidi:isolate}
+.md .codeblock code{background:none;padding:0;border-radius:0;font-size:13px}
+.table-wrap{overflow-x:auto;margin:0 0 14px;border:1px solid var(--border);border-radius:12px}
+.md table{border-collapse:collapse;width:100%;font-size:14px}
+.md th,.md td{padding:8px 14px;text-align:start;border-bottom:1px solid var(--border);white-space:nowrap}
+.md th{font-weight:600;background:var(--bubble)}
+.md tr:last-child td{border-bottom:0}
+.codeblock{direction:ltr;background:#0d0d0d;color:#e3e3e3;border-radius:14px;overflow:hidden;margin:12px 0;border:1px solid #2b2b2b;text-align:left}
+.cb-head{display:flex;justify-content:space-between;align-items:center;background:#2f2f2f;color:#b8b8b8;padding:6px 8px 6px 14px;font-size:12px;font-family:var(--mono)}
+.cb-copy{display:flex;align-items:center;gap:6px;background:none;border:0;color:#b8b8b8;cursor:pointer;padding:4px 8px;border-radius:6px;font-family:var(--font);font-size:12px}
+.cb-copy:hover{background:#3d3d3d;color:#fff}
+.codeblock pre{margin:0;padding:14px 16px;overflow-x:auto;font-family:var(--mono);font-size:13px;line-height:1.65;tab-size:4}
+.t-c{color:#7d7d7d;font-style:italic}.t-s{color:#a9bba3}.t-n{color:#cdb98f}.t-k{color:#fff;font-weight:600}
+
+/* ---------- pages ---------- */
+.page{padding:10px 26px 40px;animation:fade .25s ease both}
+.page h1{font-size:26px;font-weight:700;margin:6px 0 18px}
+.pg-empty{text-align:center;color:var(--muted);padding:56px 12px;display:flex;flex-direction:column;align-items:center;gap:8px}
+.pg-empty h3{margin:10px 0 0;color:var(--fg);font-size:18px}
+.pg-empty p{margin:0 0 12px;max-width:280px}
+.pill-btn{height:44px;padding:0 22px;border-radius:22px;border:0;background:var(--btn);color:var(--btn-fg);font-size:15px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:8px}
+.add-row{display:flex;align-items:center;gap:12px;width:100%;height:52px;border:1px dashed var(--card2);background:none;border-radius:16px;padding:0 16px;cursor:pointer;color:var(--fg2);margin-bottom:12px;font-size:16px}
+.add-row:hover{background:var(--hover)}
+.row2{display:flex;align-items:center;gap:14px;min-height:60px;padding:8px 4px;border-bottom:1px solid var(--border)}
+.row2:last-child{border-bottom:0}
+.row2 .grow{flex:1;min-width:0}
+.row2 .t{font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row2 .d{font-size:13px;color:var(--muted)}
+.row2.link{cursor:pointer}
+.mini{width:36px;height:36px;border-radius:50%;border:0;background:none;color:var(--muted);cursor:pointer;display:grid;place-items:center}
+.mini:hover{background:var(--hover);color:var(--fg)}
+.img-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.img-grid img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:12px;cursor:pointer}
+
+/* ---------- composer ---------- */
+.composer-area{flex:none;padding:6px 0 calc(18px + env(safe-area-inset-bottom))}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin:0 34px 8px}
+.chip{display:flex;align-items:center;gap:8px;background:var(--surface);border-radius:16px;padding:6px 8px 6px 12px;font-size:14px;position:relative;max-width:100%}
+.chip.img{padding:0;width:64px;height:64px;overflow:hidden}
+.chip.img img{width:100%;height:100%;object-fit:cover}
+.chip span.n{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:160px}
+.chip button{width:22px;height:22px;border-radius:50%;border:0;background:var(--card2);color:var(--fg);display:grid;place-items:center;cursor:pointer;padding:0}
+.chip.img button{position:absolute;top:4px;inset-inline-start:4px;background:rgba(0,0,0,.65);color:#fff}
+.chip.deep{background:var(--pill-bg);color:var(--pill-fg)}
+.chip.deep button{background:transparent;color:inherit}
+.composer{margin:0 34px;min-height:48px;background:var(--surface);border-radius:26px;display:flex;align-items:flex-end;gap:2px;padding:6px 6px 6px 6px;transition:box-shadow .2s}
+.composer:focus-within{box-shadow:0 0 0 1px var(--card2)}
+.c-plus{width:44px;height:36px;border:0;background:none;color:var(--fg);cursor:pointer;display:grid;place-items:center;border-radius:18px;flex:none;transition:transform .2s var(--ease)}
+.c-plus.open{transform:rotate(45deg)}
+.composer textarea{flex:1;min-width:0;resize:none;border:0;outline:0;background:none;color:var(--fg);font:inherit;font-size:17px;line-height:1.55;padding:5px 4px;height:36px;max-height:160px}
+.composer textarea::placeholder{color:var(--muted)}
+.c-mic{width:42px;height:36px;border:0;background:none;color:var(--fg);cursor:pointer;display:grid;place-items:center;border-radius:18px;flex:none}
+.c-mic.rec{color:var(--blue);animation:pulse 1.1s infinite}
+.c-wave{width:36px;height:36px;border-radius:50%;border:0;background:var(--btn);color:var(--btn-fg);cursor:pointer;display:grid;place-items:center;flex:none;transition:transform .12s}
+.c-wave:active{transform:scale(.92)}
+
+/* + sheet */
+.sheet-back{position:fixed;inset:0;z-index:150}
+.sheet{position:fixed;width:min(255px,calc(100vw - 16px));background:var(--card);border-radius:34px;padding:10px 14px;box-shadow:var(--shadow);animation:sheetIn .2s var(--ease) both;transform-origin:bottom right;border:1px solid var(--border)}
+.sheet-row{display:flex;align-items:center;gap:14px;width:100%;height:64px;border:0;background:none;cursor:pointer;font-size:17px;text-align:start;border-radius:20px}
+.sheet-ic{width:46px;height:46px;border-radius:50%;background:var(--card2);display:grid;place-items:center;flex:none;transition:transform .12s}
+.sheet-row:active .sheet-ic{transform:scale(.92)}
+
+/* ---------- drawer ---------- */
+.scrim{position:absolute;inset:0;background:var(--scrim);opacity:0;pointer-events:none;transition:opacity .28s;z-index:40}
+.app.dr-open .scrim{opacity:1;pointer-events:auto}
+.drawer{position:absolute;inset-block:0;inset-inline-start:0;width:min(80%,360px);background:var(--bg);border-inline-end:1px solid var(--border);z-index:50;transform:translateX(100%);transition:transform .3s var(--ease);display:flex;flex-direction:column;overflow:hidden}
+.app.dr-open .drawer{transform:none}
+.dr-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:calc(14px + env(safe-area-inset-top)) 22px 8px 22px;flex:none;min-height:66px}
+.dr-head h2{margin:0 6px 0 0;font-size:26px;font-weight:700;direction:ltr}
+.dr-search{flex:1;display:flex;align-items:center;gap:10px;height:44px;border-radius:22px;background:var(--circle);padding:0 14px;color:var(--muted)}
+.dr-search input{flex:1;min-width:0;border:0;outline:0;background:none;color:var(--fg);font:inherit;font-size:16px}
+.dr-scroll{flex:1;overflow-y:auto;padding:10px 6px 130px 22px;margin-inline-end:0}
+.nav-item{display:flex;align-items:center;gap:16px;width:100%;height:50px;border:0;background:none;cursor:pointer;font-size:18px;font-weight:600;text-align:start;border-radius:14px;padding:0 12px;transition:background .15s}
+.nav-item:hover,.nav-item.on{background:var(--hover)}
+.dr-sec{font-size:18px;font-weight:700;margin:26px 12px 8px}
+.item{position:relative;display:flex;align-items:center;gap:16px;min-height:48px;padding:0 12px;border-radius:14px;cursor:pointer;font-size:17px;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;transition:background .15s}
+.item:hover,.item.active,.item.menu-open{background:var(--hover)}
+.item .it{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.item .dots-btn{display:none;width:30px;height:30px;border-radius:8px;border:0;background:none;color:var(--muted);cursor:pointer;place-items:center}
+@media (hover:hover){.item:hover .dots-btn,.item.menu-open .dots-btn{display:grid}}
+.item .dots-btn:hover{background:var(--card2);color:var(--fg)}
+.dr-empty{color:var(--muted);font-size:14px;padding:6px 12px}
+.arch-toggle{display:flex;align-items:center;gap:8px;border:0;background:none;color:var(--muted);font-size:14px;padding:18px 12px 6px;cursor:pointer}
+.dr-fade{position:absolute;inset-inline:0;bottom:0;height:150px;background:linear-gradient(to top,var(--bg) 38%,transparent);pointer-events:none}
+.dr-foot{position:absolute;inset-inline:0;bottom:0;padding:0 22px calc(18px + env(safe-area-inset-bottom));display:flex;justify-content:space-between;align-items:center;pointer-events:none}
+.dr-foot>*{pointer-events:auto}
+.newchat-pill{height:48px;padding:0 22px;border-radius:24px;border:0;background:var(--blue);color:#fff;display:flex;align-items:center;gap:10px;font-size:17px;font-weight:600;cursor:pointer;transition:transform .12s}
+.newchat-pill:active{transform:scale(.95)}
+.avatar-btn{width:48px;height:48px;border-radius:50%;border:0;background:var(--circle);display:grid;place-items:center;cursor:pointer;padding:0}
+.av{width:38px;height:38px;border-radius:50%;background:var(--purple);color:#fff;font-weight:600;font-size:15px;display:grid;place-items:center;overflow:hidden;font-family:var(--font)}
+.av img{width:100%;height:100%;object-fit:cover}
+
+/* ---------- menus / modals / toast ---------- */
+.menu{position:fixed;z-index:700;min-width:210px;max-width:calc(100vw - 16px);background:var(--card);border:1px solid var(--border);border-radius:20px;box-shadow:var(--shadow);padding:8px;animation:pop .16s var(--ease) both;transform-origin:var(--o,top)}
+.menu-head{padding:8px 12px 6px;font-size:13px;color:var(--muted);max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.menu-item{display:flex;align-items:center;gap:12px;width:100%;padding:11px 12px;border:0;background:none;border-radius:12px;cursor:pointer;text-align:start;font-size:15.5px}
+.menu-item:hover,.menu-item:focus-visible{background:var(--card2)}
+.menu-item.danger{color:var(--danger)}
+.menu-sep{height:1px;background:var(--border);margin:6px 4px}
+.backdrop{position:fixed;inset:0;z-index:600;background:var(--scrim);display:grid;place-items:center;padding:16px;animation:fade .18s ease both}
+.backdrop.out{opacity:0;transition:opacity .15s}
+.dialog{background:var(--dlg);color:var(--fg);border:1px solid var(--border);border-radius:26px;box-shadow:var(--shadow);width:100%;max-width:440px;max-height:88vh;display:flex;flex-direction:column;overflow:hidden;animation:pop .2s var(--ease) both;outline:0}
+.dialog.settings,.dialog.wide{max-width:680px}
+.dlg-head{display:flex;align-items:center;justify-content:space-between;padding:12px 20px 12px 12px;border-bottom:1px solid var(--border)}
+.dlg-head h3{margin:0;font-size:17px;font-weight:600;padding-inline-start:8px}
+.dlg-body{padding:22px 22px 8px;overflow:auto}
+.dlg-body h3{margin:0 0 8px;font-size:18px;font-weight:600}
+.dlg-body p{margin:0 0 12px;color:var(--fg2)}
+.dlg-body label{display:block;font-size:13px;color:var(--muted);margin:10px 0 6px}
+.text-input,.sel{width:100%;height:46px;border-radius:14px;border:1px solid var(--card2);background:var(--bg);color:var(--fg);padding:0 14px;font:inherit;font-size:16px;outline:0}
+.text-input:focus,.sel:focus{border-color:var(--muted)}
+.dlg-foot{display:flex;gap:8px;padding:14px 22px 20px}
+.btn{height:42px;padding:0 20px;border-radius:999px;border:1px solid var(--card2);background:none;cursor:pointer;font-size:15px;transition:opacity .15s,background .15s}
+.btn:hover{background:var(--hover)}
+.btn.solid{background:var(--btn);color:var(--btn-fg);border-color:var(--btn)}
+.btn.solid:hover{opacity:.88;background:var(--btn)}
+.btn.danger{background:var(--danger);border-color:var(--danger);color:#fff}
+.st-wrap{display:flex;height:480px;min-height:0}
+.st-nav{width:190px;flex:none;padding:12px;border-inline-end:1px solid var(--border);display:flex;flex-direction:column;gap:2px;overflow:auto}
+.st-nav button{display:flex;align-items:center;gap:10px;height:42px;padding:0 12px;border:0;background:none;border-radius:12px;cursor:pointer;text-align:start;font-size:14.5px;color:var(--fg2)}
+.st-nav button:hover{background:var(--hover)}
+.st-nav button.on{background:var(--circle);color:var(--fg)}
+.st-pane{flex:1;min-width:0;padding:6px 22px 20px;overflow:auto}
+.st-pane h4{margin:14px 0 4px;font-size:15px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 0;border-bottom:1px solid var(--border)}
+.row:last-child{border-bottom:0}
+.row-title{font-size:15px}
+.row-desc{font-size:12.5px;color:var(--muted);line-height:1.6}
+.switch{width:46px;height:28px;border-radius:999px;border:0;background:var(--btn-off);position:relative;cursor:pointer;flex:none;transition:background .2s}
+.switch i{position:absolute;top:3px;inset-inline-start:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:inset-inline-start .2s var(--ease)}
+.switch[aria-checked="true"]{background:var(--blue)}
+.switch[aria-checked="true"] i{inset-inline-start:21px}
+.seg{display:flex;background:var(--circle);border-radius:14px;padding:3px;gap:2px}
+.seg button{display:flex;align-items:center;gap:6px;height:36px;padding:0 14px;border:0;background:none;border-radius:11px;cursor:pointer;font-size:14px;color:var(--fg2)}
+.seg button.on{background:var(--card2);color:var(--fg)}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:10px 20px;font-size:14px;align-items:center}
+kbd{font-family:var(--mono);font-size:12px;background:var(--circle);border:1px solid var(--card2);border-radius:6px;padding:1px 7px;direction:ltr;display:inline-block}
+.plus-list{margin:0 0 14px;padding:0;list-style:none;display:flex;flex-direction:column;gap:10px}
+.plus-list li{display:flex;gap:10px;align-items:center;color:var(--fg2)}
+.toast{position:fixed;inset-inline:0;bottom:calc(110px + env(safe-area-inset-bottom));margin:auto;width:max-content;max-width:calc(100vw - 32px);z-index:900;background:var(--fg);color:var(--bg);padding:10px 20px;border-radius:999px;font-size:14.5px;display:flex;align-items:center;gap:14px;opacity:0;transform:translateY(8px);pointer-events:none;transition:opacity .2s,transform .2s}
+.toast.show{opacity:1;transform:none;pointer-events:auto}
+.toast button{background:none;border:0;color:inherit;font-weight:700;cursor:pointer;text-decoration:underline;padding:0}
+
+/* ---------- voice ---------- */
+.voice{position:fixed;inset:0;z-index:500;background:var(--bg);display:flex;flex-direction:column;align-items:center;padding:calc(20px + env(safe-area-inset-top)) 24px calc(30px + env(safe-area-inset-bottom));animation:fade .25s ease both}
+.voice .v-top{align-self:flex-start;width:100%}
+.v-mid{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:32px;text-align:center}
+.orb{width:150px;height:150px;border-radius:50%;background:var(--btn);animation:orb 1.8s ease-in-out infinite}
+.orb.muted{animation:none;background:var(--card2);transform:scale(.8)}
+#vStatus{color:var(--fg2);min-height:52px;max-width:320px;margin:0}
+.v-bar{display:flex;gap:28px}
+.v-bar .circle{width:64px;height:64px}
+.v-bar .circle.end{background:#e5484d;color:#fff}
+
+/* ---------- auth ---------- */
+.auth{position:fixed;inset:0;z-index:400;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:24px;animation:fade .3s ease both}
+.auth-x{position:absolute;top:calc(14px + env(safe-area-inset-top));inset-inline-start:14px}
+.auth-box{width:100%;max-width:360px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:12px}
+.auth-logo{margin-bottom:8px}
+.auth-box h1{margin:0;font-size:26px;font-weight:700}
+.auth-box p{margin:0 0 14px;color:var(--muted)}
+.auth-btn{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;height:52px;border-radius:26px;border:1px solid var(--card2);background:var(--bg);cursor:pointer;font-size:17px;font-weight:500;transition:background .15s,transform .12s}
+.auth-btn:hover{background:var(--hover)}.auth-btn:active{transform:scale(.98)}
+.auth-link{border:0;background:none;color:var(--blue);cursor:pointer;font-size:15px;padding:10px}
+.auth-box .auth-note{font-size:12.5px;margin:6px 0 0;line-height:1.7}
+
+@keyframes msgIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+@keyframes pop{from{opacity:0;transform:scale(.96) translateY(-4px)}to{opacity:1;transform:none}}
+@keyframes sheetIn{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:none}}
+@keyframes dot{0%,60%,100%{transform:translateY(0);opacity:.4}30%{transform:translateY(-5px);opacity:1}}
+@keyframes pulse{50%{opacity:.45}}
+@keyframes orb{0%,100%{transform:scale(.92);box-shadow:0 0 0 0 rgba(128,128,128,.35)}50%{transform:scale(1.05);box-shadow:0 0 0 28px rgba(128,128,128,0)}}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms !important;transition-duration:.01ms !important}}
+@media (max-width:640px){
+  .st-wrap{flex-direction:column;height:auto;max-height:72vh}
+  .st-nav{width:100%;flex-direction:row;border-inline-end:0;border-bottom:1px solid var(--border);padding:8px;overflow-x:auto;flex:none}
+  .st-nav button{white-space:nowrap;flex:none}
+  .st-pane{padding:4px 16px 16px}
+  .row{flex-wrap:wrap}
+}
+@media (max-width:380px){.composer,.chips{margin-inline:20px}}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <header class="top">
+    <button class="circle" id="menuBtn" aria-label="باز کردن منو"><span data-icon="menu2" data-size="24"></span></button>
+    <button class="plus-pill" id="plusPill" aria-label="دریافت Plus"><span data-icon="sparkle" data-size="20"></span><span>دریافت</span><b>Plus</b></button>
+    <span class="temp-label" id="tempLabel" hidden>چت موقت</span>
+    <span class="spacer"></span>
+    <button class="circle" id="tempBtn" aria-label="چت موقت" aria-pressed="false"><span data-icon="temp" data-size="24"></span></button>
+  </header>
+
+  <div class="view"><div class="scroll" id="scroll"></div></div>
+
+  <div class="composer-area" id="composerArea">
+    <div class="chips" id="chips" hidden></div>
+    <div class="composer" id="composer">
+      <button class="c-plus" id="plus" aria-label="افزودن" aria-haspopup="menu"><span data-icon="plusThin" data-size="30"></span></button>
+      <textarea id="input" rows="1" placeholder="از ChatGPT بپرسید" aria-label="پیام"></textarea>
+      <button class="c-mic" id="mic" aria-label="تایپ با صدا"><span data-icon="mic" data-size="25"></span></button>
+      <button class="c-wave" id="wave" aria-label="حالت صوتی"></button>
+    </div>
+  </div>
+
+  <div class="scrim" id="scrim"></div>
+  <aside class="drawer" id="drawer" aria-label="منو">
+    <div class="dr-head" id="drHead"></div>
+    <div class="dr-scroll" id="drList"></div>
+    <div class="dr-fade"></div>
+    <div class="dr-foot">
+      <button class="newchat-pill" id="newChat"><span data-icon="newchat" data-size="24"></span><span>چت</span></button>
+      <button class="avatar-btn" id="avatarBtn" aria-label="حساب کاربری" aria-haspopup="menu"></button>
+    </div>
+  </aside>
+</div>
+
+<input type="file" id="fileAny" multiple hidden>
+<input type="file" id="fileImg" accept="image/*" multiple hidden>
+<input type="file" id="fileCam" accept="image/*" capture="environment" hidden>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(() => {
+'use strict';
+
+/* =====================================================
+   Config: put your Google OAuth "Web client ID" here
+   (or enter it later in Settings > Account).
+===================================================== */
+const GOOGLE_CLIENT_ID = '';
+
+/* =====================================================
+   Utilities
+===================================================== */
+const $ = (s, r = document) => r.querySelector(s);
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+const fa = new Intl.NumberFormat('fa-IR');
+const fmtTime = t => new Date(t).toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' });
+const FENCE = '`'.repeat(3);
+
+/* =====================================================
+   Icons (all SVG)
+===================================================== */
+const P = {
+  logo: '<g stroke-width="1.6"><ellipse cx="12" cy="12" rx="3.6" ry="9.2"/><ellipse cx="12" cy="12" rx="3.6" ry="9.2" transform="rotate(60 12 12)"/><ellipse cx="12" cy="12" rx="3.6" ry="9.2" transform="rotate(120 12 12)"/></g>',
+  menu2: '<path d="M4 9h16M4 15h10" stroke-width="2"/>',
+  temp: '<circle cx="12" cy="12" r="9.2" stroke-dasharray="3.4 3.1"/><path d="M8.2 10.6c0-1.6 1.7-2.9 3.8-2.9s3.8 1.3 3.8 2.9-1.7 2.9-3.8 2.9c-.5 0-1-.1-1.4-.2l-1.9.9.5-1.6c-.6-.6-1-1.2-1-2z"/>',
+  sparkle: '<path d="M12 2c.6 4.8 3.2 8.2 10 10-6.8 1.8-9.4 5.2-10 10-.6-4.8-3.2-8.2-10-10 6.8-1.8 9.4-5.2 10-10z" fill="currentColor" stroke="none"/>',
+  search: '<circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/>',
+  newchat: '<path d="M12 4H7a3 3 0 0 0-3 3v10a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-5"/><path d="M17.5 3.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4z"/>',
+  images: '<rect x="7" y="3" width="14" height="14" rx="3.5"/><path d="M17 21H6.5A3.5 3.5 0 0 1 3 17.5V8"/><circle cx="12.3" cy="8" r="1.3"/><path d="M21 13l-4-3.4L9 17"/>',
+  library: '<rect x="3" y="4" width="4.4" height="16" rx="1.3"/><rect x="9.6" y="4" width="4.4" height="16" rx="1.3"/><path d="M16.2 6.2l3.6-1 3 13.6-3.6 1z" transform="translate(-.6 0)"/>',
+  folder: '<path d="M3 8a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M3 11h18"/>',
+  clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  plugin: '<circle cx="12" cy="12" r="3.2"/><path d="M15.2 12v1.5a2.3 2.3 0 0 0 4.6 0V12a7.8 7.8 0 1 0-3.1 6.2"/>',
+  bubble: '<path d="M12 4C7 4 3.5 7.2 3.5 11.2c0 1.8.7 3.3 1.9 4.6L5 20l4.2-1.7c.9.3 1.8.4 2.8.4 5 0 8.5-3.2 8.5-7.5S17 4 12 4z"/>',
+  headphones: '<path d="M4 15v-3a8 8 0 0 1 16 0v3"/><rect x="3" y="14" width="4" height="6.5" rx="2"/><rect x="17" y="14" width="4" height="6.5" rx="2"/>',
+  image: '<rect x="3.5" y="4" width="17" height="16" rx="3"/><circle cx="14.5" cy="9.5" r="1.6"/><path d="M20.5 15l-4.6-4.2L6 20"/>',
+  pencil: '<path d="M4 20h4L19.5 8.5a2.8 2.8 0 0 0-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>',
+  plusThin: '<path d="M12 4.5v15M4.5 12h15" stroke-width="1.6"/>',
+  mic: '<rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>',
+  wave: '<path d="M5 10v4M8.5 7v10M12 4v16M15.5 8v8M19 10.5v3" stroke-width="2.2"/>',
+  send: '<path d="M12 19V5M5 12l7-7 7 7" stroke-width="2.2"/>',
+  stop: '<rect x="6.5" y="6.5" width="11" height="11" rx="2.5" fill="currentColor" stroke="none"/>',
+  camera: '<path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.5"/>',
+  clip: '<path d="M21 11l-9 9a5 5 0 0 1-7-7l9-9a3.5 3.5 0 0 1 5 5l-9 9a2 2 0 0 1-3-3l8-8"/>',
+  gauge: '<path d="M12 4a8 8 0 1 0 8 8" stroke-width="2"/><path d="M12 12l3.8-3.8" stroke-width="2"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/>',
+  copy: '<rect x="9" y="9" width="11" height="11" rx="2.5"/><path d="M5 15V6a2 2 0 0 1 2-2h8"/>',
+  check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+  like: '<path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/>',
+  dislike: '<path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/>',
+  regen: '<path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/>',
+  share: '<path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7M16 6l-4-4-4 4M12 2v14"/>',
+  dots: '<circle cx="5" cy="12" r="1.7" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.7" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.7" fill="currentColor" stroke="none"/>',
+  trash: '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/>',
+  archive: '<rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8M10 12h4"/>',
+  pin: '<path d="M9 4h6l-1 6 3 3v1H7v-1l3-3zM12 14v7"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  close: '<path d="M6 6l12 12M18 6L6 18"/>',
+  moon: '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>',
+  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+  monitor: '<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/>',
+  user: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
+  settings: '<path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>',
+  sliders: '<path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/>',
+  help: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1 1-1 1.7M12 17h.01"/>',
+  info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',
+  lock: '<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
+  chat: '<path d="M5 5h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H11l-5 4v-4H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"/>',
+  logout: '<path d="M9 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h3M16 8l4 4-4 4M20 12H9"/>',
+  login: '<path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 8l-4 4 4 4M6 12h11"/>'
+};
+const icon = (n, s = 22) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${P[n]}</svg>`;
+const hydrateIcons = (root = document) => root.querySelectorAll('[data-icon]').forEach(el => { el.innerHTML = icon(el.dataset.icon, +el.dataset.size || 22); });
+const G_SVG = '<svg width="22" height="22" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>';
+
+/* =====================================================
+   Storage
+===================================================== */
+const K = { conv: 'cgx:conversations', active: 'cgx:active', settings: 'cgx:settings', user: 'cgx:user', guest: 'cgx:guest', proj: 'cgx:projects', tasks: 'cgx:tasks', plugins: 'cgx:plugins' };
+const read = (k, d) => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } };
+const write = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
+const drop = k => { try { localStorage.removeItem(k); } catch {} };
+const DEFAULTS = { theme: 'dark', enterToSend: true, showTime: false, compact: false, saveHistory: true, userName: 'مهمان', googleClientId: '' };
+
+/* =====================================================
+   Markdown
+===================================================== */
+function highlight(code, lang) {
+  const l = (lang || '').toLowerCase();
+  const KW = {
+    py: 'def|class|return|if|elif|else|for|while|in|import|from|as|with|try|except|finally|raise|lambda|None|True|False|and|or|not|pass|break|continue|async|await|yield|is',
+    js: 'function|const|let|var|return|if|else|for|while|import|from|export|class|new|try|catch|throw|async|await|null|true|false|undefined|typeof|of|in|switch|case|break|continue|default'
+  };
+  let kind = null;
+  if (['python', 'py'].includes(l)) kind = 'py';
+  else if (['js', 'javascript', 'ts', 'typescript', 'jsx', 'tsx'].includes(l)) kind = 'js';
+  if (!kind) return esc(code);
+  const STR = /"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`/.source;
+  const CM = kind === 'py' ? '#.*' : '\\/\\/.*';
+  const re = new RegExp(`(${CM})|(${STR})|\\b(\\d+(?:\\.\\d+)?)\\b|\\b(${KW[kind]})\\b`, 'g');
+  let out = '', last = 0, m;
+  while ((m = re.exec(code))) {
+    out += esc(code.slice(last, m.index));
+    const c = m[1] ? 'c' : m[2] ? 's' : m[3] ? 'n' : 'k';
+    out += `<span class="t-${c}">${esc(m[0])}</span>`;
+    last = re.lastIndex;
+  }
+  return out + esc(code.slice(last));
+}
+function inline(src) {
+  let s = esc(src);
+  const codes = [];
+  s = s.replace(/`([^`]+)`/g, (_, c) => { codes.push(c); return `\u0000${codes.length - 1}\u0000`; });
+  s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>').replace(/__([^_]+)__/g, '<strong>$1</strong>');
+  s = s.replace(/(^|[^*])\*([^*\s][^*]*)\*/g, '$1<em>$2</em>');
+  s = s.replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+  return s.replace(/\u0000(\d+)\u0000/g, (_, i) => `<code>${codes[i]}</code>`);
+}
+function codeBlock(code, lang) {
+  return `<div class="codeblock"><div class="cb-head"><span>${esc(lang || 'text')}</span><button class="cb-copy" type="button">${icon('copy', 15)}<span>کپی کد</span></button></div><pre><code>${highlight(code, lang)}</code></pre></div>`;
+}
+function renderMarkdown(src) {
+  const lines = src.replace(/\r/g, '').split('\n');
+  const out = [];
+  const isSep = s => s !== undefined && s.includes('-') && /^\s*\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)*\|?\s*$/.test(s);
+  const cells = s => s.trim().replace(/^\|/, '').replace(/\|$/, '').split('|').map(c => c.trim());
+  const UL = /^\s*[-*+]\s+/, OL = /^\s*\d+[.)]\s+/;
+  let i = 0, m;
+  while (i < lines.length) {
+    const line = lines[i];
+    if ((m = line.match(/^\s*`{3}(\S*)/))) {
+      const buf = []; i++;
+      while (i < lines.length && !/^\s*`{3}\s*$/.test(lines[i])) buf.push(lines[i++]);
+      i++;
+      out.push(codeBlock(buf.join('\n'), m[1]));
+      continue;
+    }
+    if (!line.trim()) { i++; continue; }
+    if ((m = line.match(/^(#{1,4})\s+(.*)$/))) {
+      const n = m[1].length + 1;
+      out.push(`<h${n} dir="auto">${inline(m[2])}</h${n}>`); i++; continue;
+    }
+    if (/^\s*(-{3,}|\*{3,})\s*$/.test(line)) { out.push('<hr>'); i++; continue; }
+    if (line.includes('|') && isSep(lines[i + 1])) {
+      const head = cells(line); i += 2;
+      const rows = [];
+      while (i < lines.length && lines[i].trim() && lines[i].includes('|')) rows.push(cells(lines[i++]));
+      out.push(`<div class="table-wrap"><table><thead><tr>${head.map(c => `<th>${inline(c)}</th>`).join('')}</tr></thead><tbody>${rows.map(r => `<tr>${r.map(c => `<td>${inline(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`);
+      continue;
+    }
+    if (/^\s*>/.test(line)) {
+      const buf = [];
+      while (i < lines.length && /^\s*>/.test(lines[i])) buf.push(lines[i++].replace(/^\s*>\s?/, ''));
+      out.push(`<blockquote>${buf.map(inline).join('<br>')}</blockquote>`); continue;
+    }
+    if (UL.test(line)) {
+      const items = [];
+      while (i < lines.length && UL.test(lines[i])) items.push(lines[i++].replace(UL, ''));
+      out.push(`<ul>${items.map(t => `<li>${inline(t)}</li>`).join('')}</ul>`); continue;
+    }
+    if (OL.test(line)) {
+      const items = [];
+      while (i < lines.length && OL.test(lines[i])) items.push(lines[i++].replace(OL, ''));
+      out.push(`<ol>${items.map(t => `<li>${inline(t)}</li>`).join('')}</ol>`); continue;
+    }
+    const buf = [line]; i++;
+    while (i < lines.length && lines[i].trim() && !/^\s*(`{3}|#{1,4}\s|>|[-*+]\s|\d+[.)]\s)/.test(lines[i]) && !(lines[i].includes('|') && isSep(lines[i + 1]))) buf.push(lines[i++]);
+    out.push(`<p dir="auto">${buf.map(inline).join('<br>')}</p>`);
+  }
+  return out.join('');
+}
+
+/* =====================================================
+   Mock AI (replace AIService.reply with a real API later)
+===================================================== */
+const MOCKS = [
+  { test: /مارک.?داون|markdown|نمونه/i, text: () => [
+    '## نمونه‌ی قالب‌بندی', '',
+    'این پاسخ برای تست ظاهر است: **متن پررنگ**، *متن کج* و `کد درون‌خطی`.', '',
+    '### فهرست', '- مورد اول', '- مورد دوم', '- مورد سوم', '',
+    '### فهرست شماره‌دار', '1. گام اول', '2. گام دوم', '3. گام سوم', '',
+    '> این یک نقل‌قول است.', '',
+    FENCE + 'javascript', 'const greet = (name) => {', '  // سلام!', '  return `Hello, ${name}`;', '};', 'console.log(greet("World"));', FENCE, '',
+    '| ویژگی | وضعیت |', '| --- | --- |', '| منوی کناری | آماده |', '| مارک‌داون | آماده |', '| حالت تاریک | آماده |'
+  ].join('\n') },
+  { test: /پایتون|python|کد|برنامه/i, text: () => [
+    'حتماً. این یک نمونه‌ی ساده برای پیدا کردن اعداد اول است:', '',
+    FENCE + 'python', 'def is_prime(n: int) -> bool:', '    if n < 2:', '        return False', '    for i in range(2, int(n ** 0.5) + 1):', '        if n % i == 0:', '            return False', '    return True', '', '# اعداد اول تا ۵۰', 'primes = [n for n in range(50) if is_prime(n)]', 'print(primes)', FENCE, '',
+    '**نکته:** برای بازه‌های بزرگ‌تر بهتر است از الگوریتم `غربال اراتستن` استفاده کنید.'
+  ].join('\n') },
+  { test: /جدول|مقایسه|لپ.?تاپ/i, text: () => [
+    'یک مقایسه‌ی سریع بین سه دسته لپ‌تاپ:', '',
+    '| دسته | مناسب برای | نقطه قوت |', '| --- | --- | --- |', '| سبک و فوق‌باریک | سفر و کار روزمره | وزن کم و باتری خوب |', '| متعادل | برنامه‌نویسی | قیمت و کارایی |', '| گیمینگ | بازی و رندر | کارت گرافیک قوی |', '',
+    'برای برنامه‌نویسی معمولاً **۱۶ گیگابایت رم** و SSD سریع مهم‌تر از کارت گرافیک است.'
+  ].join('\n') },
+  { test: /تصویر/, text: () => 'ساخت تصویر در این نسخه‌ی آزمایشی فعال نیست. وقتی به یک مدل واقعی وصل شود، توضیح شما به آن ارسال و تصویر ساخته می‌شود.' },
+  { test: /خلاصه/, text: () => [
+    'خلاصه‌ی نمونه:', '', '- ایده‌ی اصلی در یک جمله بیان می‌شود.', '- دو یا سه نکته‌ی کلیدی فهرست می‌شوند.', '- در پایان نتیجه‌گیری کوتاه می‌آید.', '',
+    'متن را بفرستید تا خلاصه‌ی واقعی‌اش را بنویسم. این بخش فعلاً نمایشی است.'
+  ].join('\n') },
+  { test: /ترجمه|translate/i, text: () => [
+    'نمونه‌ی ترجمه:', '', '> Hello, how are you today?', '', 'سلام، امروز حالت چطور است؟', '',
+    'در نسخه‌ی واقعی، متن شما به مدل ارسال و ترجمه‌ی دقیق برگردانده می‌شود.'
+  ].join('\n') },
+  { test: /ایده/, text: () => [
+    'چند ایده‌ی نمونه برای شروع:', '', '1. **ابزار کوچک و کاربردی:** مسئله‌ای که خودتان هر روز با آن روبه‌رو می‌شوید را حل کنید.',
+    '2. **نسخه‌ی ساده از یک محصول معروف:** ساخت مجدد یک ایده‌ی شناخته‌شده بهترین تمرین است.', '3. **افزونه یا ربات:** وابستگی کم و انتشار سریع.', '',
+    'بگویید در چه حوزه‌ای کار می‌کنید تا ایده‌ها دقیق‌تر شوند.'
+  ].join('\n') }
+];
+const DEFAULT_REPLY = 'این یک پاسخ آزمایشی است. در مرحله بعد می‌توان اتصال به مدل هوش مصنوعی را اضافه کرد.';
+
+const AIService = {
+  /** messages: [{role, content, attachments?}] -> returns reply text */
+  async reply(messages, { signal, deep } = {}) {
+    await wait(deep ? 2800 : 700 + Math.random() * 700, signal);
+    const last = [...messages].reverse().find(m => m.role === 'user');
+    if (last && last.attachments && last.attachments.length && !last.content.trim())
+      return 'پیوست‌ها دریافت شد:\n\n' + last.attachments.map(a => '- ' + a.name).join('\n') + '\n\nخواندن محتوای فایل‌ها در این نسخه‌ی نمایشی فعال نیست.';
+    const hit = last && MOCKS.find(m => m.test.test(last.content));
+    return hit ? hit.text() : DEFAULT_REPLY;
+  }
+};
+function wait(ms, signal) {
+  return new Promise((res, rej) => {
+    const abort = () => new DOMException('Aborted', 'AbortError');
+    if (signal && signal.aborted) return rej(abort());
+    const t = setTimeout(res, ms);
+    if (signal) signal.addEventListener('abort', () => { clearTimeout(t); rej(abort()); }, { once: true });
+  });
+}
+
+/* =====================================================
+   State
+===================================================== */
+function seed() {
+  const now = Date.now(), day = 86400000;
+  const mk = (title, ago, q, a, pinned) => ({
+    id: uid(), title, archived: false, pinned: !!pinned, createdAt: now - ago, updatedAt: now - ago,
+    messages: [
+      { id: uid(), role: 'user', content: q, time: now - ago - 60000 },
+      { id: uid(), role: 'assistant', content: a, time: now - ago, feedback: null }
+    ]
+  });
+  return [
+    mk('اجرای فایل‌های پایتون', 0.1 * day, 'یک کد پایتون بنویس که بررسی کند عددی اول است یا نه', MOCKS[1].text(), true),
+    mk('پروژه ربات بله', 0.3 * day, 'می‌خوام یه ربات بله بسازم که لینک ویدیو رو دانلود کنه. از کجا شروع کنم؟',
+      'برای شروع این مراحل را دنبال کنید:\n\n1. در بله یک ربات بسازید و **توکن** آن را بگیرید.\n2. یک سرویس کوچک بنویسید که پیام‌ها را دریافت کند.\n3. لینک را بررسی و دانلود را با ابزاری مثل `yt-dlp` انجام دهید.\n4. فایل نهایی را برای کاربر ارسال کنید.'),
+    mk('طراحی سایت', 1 * day, 'برای یک سایت شخصی چه ساختاری پیشنهاد می‌کنی؟',
+      'یک ساختار ساده و کافی:\n\n- **صفحه اصلی:** معرفی کوتاه و نمونه‌کارها\n- **درباره من:** سابقه و مهارت‌ها\n- **تماس:** فرم یا راه ارتباطی\n\n> هر صفحه فقط باید یک هدف روشن داشته باشد.'),
+    mk('تحلیل تصویر', 2 * day, 'چطور یک تصویر را تحلیل کنم؟', 'ابتدا هدف تحلیل را مشخص کنید؛ سپس تصویر را بفرستید تا بخش‌های مهم آن را بررسی کنیم.'),
+    mk('گفتگوی کوتاه', 3 * day, 'سلام', 'سلام! چطور می‌توانم کمک کنم؟'),
+    mk('سؤال درباره لپ‌تاپ', 5 * day, 'برای برنامه‌نویسی چه لپ‌تاپی بخرم؟', MOCKS[2].text())
+  ];
+}
+
+const state = {
+  settings: { ...DEFAULTS, ...read(K.settings, {}) },
+  user: read(K.user, null),
+  conversations: null, activeId: null, view: 'chat',
+  query: '', searching: false, showArchived: false,
+  drawer: false, generating: null, typing: false, streamingId: null,
+  temp: false, deep: false, attachments: [],
+  projects: read(K.proj, []), tasks: read(K.tasks, []),
+  plugins: { web: true, data: false, translate: true, image: false, ...read(K.plugins, {}) }
+};
+const blobs = new Map();
+state.conversations = state.settings.saveHistory ? read(K.conv, null) : null;
+if (!Array.isArray(state.conversations)) state.conversations = seed();
+state.activeId = state.settings.saveHistory ? read(K.active, null) : null;
+const getConv = id => state.conversations.find(c => c.id === id);
+if (!getConv(state.activeId)) state.activeId = null;
+
+function persist() {
+  write(K.settings, state.settings);
+  const keep = state.conversations.filter(c => !c.temp);
+  if (state.settings.saveHistory) { write(K.conv, keep); const a = getConv(state.activeId); write(K.active, a && !a.temp ? state.activeId : null); }
+  else { drop(K.conv); drop(K.active); }
+}
+function persistExtras() { write(K.proj, state.projects); write(K.tasks, state.tasks); write(K.plugins, state.plugins); }
+
+/* =====================================================
+   Theme / settings / account UI
+===================================================== */
+const darkMQ = matchMedia('(prefers-color-scheme: dark)');
+const isDark = () => document.documentElement.dataset.theme === 'dark';
+function applyTheme(animate) {
+  const t = state.settings.theme;
+  const dark = t === 'dark' || (t === 'system' && darkMQ.matches);
+  const root = document.documentElement;
+  if (animate) { root.classList.add('theme-anim'); setTimeout(() => root.classList.remove('theme-anim'), 400); }
+  root.dataset.theme = dark ? 'dark' : 'light';
+  $('meta[name="theme-color"]').content = dark ? '#000000' : '#ffffff';
+}
+const displayName = () => (state.user && state.user.name) || state.settings.userName || 'مهمان';
+function initials(name) {
+  const parts = String(name).trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return '؟';
+  return (parts[0][0] + (parts[1] ? parts[1][0] : '')).toUpperCase();
+}
+function renderAvatar() {
+  const u = state.user;
+  $('#avatarBtn').innerHTML = `<span class="av">${u && u.picture ? `<img src="${esc(u.picture)}" alt="" referrerpolicy="no-referrer">` : u ? esc(initials(u.name)) : icon('user', 20)}</span>`;
+}
+function applySettings(animate) {
+  applyTheme(animate);
+  document.body.classList.toggle('compact', !!state.settings.compact);
+  document.body.classList.toggle('hide-time', !state.settings.showTime);
+  renderAvatar();
+}
+function setSetting(k, v, animate) { state.settings[k] = v; persist(); applySettings(animate); }
+darkMQ.addEventListener('change', () => { if (state.settings.theme === 'system') applyTheme(true); });
+
+let toastTimer;
+function toast(msg, act) {
+  const el = $('#toast');
+  el.innerHTML = `<span>${esc(msg)}</span>${act ? `<button type="button">${esc(act.label)}</button>` : ''}`;
+  if (act) $('button', el).onclick = () => { act.fn(); el.classList.remove('show'); };
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), act ? 4500 : 2400);
+}
+async function copyText(t) {
+  try { await navigator.clipboard.writeText(t); return true; }
+  catch {
+    const ta = document.createElement('textarea');
+    ta.value = t; ta.style.cssText = 'position:fixed;opacity:0;top:0';
+    document.body.appendChild(ta); ta.select();
+    let ok = false; try { ok = document.execCommand('copy'); } catch {}
+    ta.remove(); return ok;
+  }
+}
+
+/* =====================================================
+   Popover menu
+===================================================== */
+let openedMenu = null;
+function closeMenu() {
+  if (!openedMenu) return;
+  openedMenu.el.remove();
+  openedMenu.anchor.classList.remove('open');
+  const row = openedMenu.anchor.closest('.item'); if (row) row.classList.remove('menu-open');
+  openedMenu = null;
+}
+function openMenu(anchor, items, opts = {}) {
+  if (openedMenu && openedMenu.anchor === anchor) { closeMenu(); return; }
+  closeMenu();
+  const el = document.createElement('div');
+  el.className = 'menu'; el.setAttribute('role', 'menu');
+  el.innerHTML = (opts.header ? `<div class="menu-head">${esc(opts.header)}</div>` : '') +
+    items.map((it, i) => it === 'sep' ? '<div class="menu-sep"></div>' :
+      `<button class="menu-item${it.danger ? ' danger' : ''}" role="menuitem" type="button" data-i="${i}">${icon(it.icon, 20)}<span>${esc(it.label)}</span></button>`).join('');
+  document.body.appendChild(el);
+  const r = anchor.getBoundingClientRect(), mw = el.offsetWidth, mh = el.offsetHeight;
+  let top = r.bottom + 6, up = false;
+  if (top + mh > innerHeight - 8) { top = r.top - mh - 6; up = true; }
+  if (top < 8) top = Math.max(8, innerHeight - mh - 8);
+  let left = opts.align === 'end' ? r.left : r.right - mw;
+  left = Math.min(Math.max(8, left), innerWidth - mw - 8);
+  el.style.top = top + 'px'; el.style.left = left + 'px';
+  el.style.setProperty('--o', up ? 'bottom' : 'top');
+  anchor.classList.add('open');
+  const row = anchor.closest('.item'); if (row) row.classList.add('menu-open');
+  el.addEventListener('click', e => {
+    const b = e.target.closest('.menu-item'); if (!b) return;
+    const it = items[+b.dataset.i]; closeMenu(); it.onClick();
+  });
+  openedMenu = { el, anchor };
+}
+document.addEventListener('pointerdown', e => {
+  if (openedMenu && !openedMenu.el.contains(e.target) && !openedMenu.anchor.contains(e.target)) closeMenu();
+});
+addEventListener('resize', () => { closeMenu(); closeSheet(); });
+
+/* =====================================================
+   Modals
+===================================================== */
+const modals = [];
+function openModal({ cls = '', html }) {
+  const back = document.createElement('div');
+  back.className = 'backdrop';
+  back.innerHTML = `<div class="dialog ${cls}" role="dialog" aria-modal="true" tabindex="-1">${html}</div>`;
+  document.body.appendChild(back);
+  hydrateIcons(back);
+  const dlg = back.firstElementChild, prev = document.activeElement;
+  let closed = false;
+  const api = {
+    el: dlg, onClose: null,
+    close() {
+      if (closed) return; closed = true;
+      back.classList.add('out'); setTimeout(() => back.remove(), 150);
+      modals.splice(modals.indexOf(api), 1);
+      if (prev && prev.focus) { try { prev.focus(); } catch {} }
+      if (api.onClose) api.onClose();
+    }
+  };
+  back.addEventListener('pointerdown', e => { if (e.target === back) api.close(); });
+  modals.push(api);
+  const auto = $('[autofocus]', dlg); (auto || dlg).focus();
+  return api;
+}
+function confirmDialog({ title, text, ok = 'تأیید', danger = false }) {
+  return new Promise(res => {
+    const m = openModal({ cls: 'small', html: `<div class="dlg-body"><h3>${esc(title)}</h3><p>${esc(text)}</p></div><div class="dlg-foot"><button class="btn ${danger ? 'danger' : 'solid'}" data-r="1" type="button">${esc(ok)}</button><button class="btn" data-r="0" type="button">انصراف</button></div>` });
+    let done = false;
+    const fin = v => { if (done) return; done = true; m.close(); res(v); };
+    m.el.addEventListener('click', e => { const b = e.target.closest('[data-r]'); if (b) fin(b.dataset.r === '1'); });
+    m.onClose = () => fin(false);
+  });
+}
+function promptDialog({ title, label, value = '', ok = 'ذخیره' }) {
+  return new Promise(res => {
+    const m = openModal({ cls: 'small', html: `<div class="dlg-body"><h3>${esc(title)}</h3><label for="pdIn">${esc(label)}</label><input class="text-input" id="pdIn" maxlength="60" autofocus value="${esc(value)}"></div><div class="dlg-foot"><button class="btn solid" data-r="1" type="button">${esc(ok)}</button><button class="btn" data-r="0" type="button">انصراف</button></div>` });
+    const input = $('#pdIn', m.el); input.select();
+    let done = false;
+    const fin = v => { if (done) return; done = true; m.close(); res(v); };
+    m.el.addEventListener('click', e => { const b = e.target.closest('[data-r]'); if (b) fin(b.dataset.r === '1' ? input.value.trim() : null); });
+    input.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing) fin(input.value.trim()); });
+    m.onClose = () => fin(null);
+  });
+}
+
+/* =====================================================
+   Elements
+===================================================== */
+const app = $('#app'), scroller = $('#scroll'), ta = $('#input'), wave = $('#wave'), micBtn = $('#mic');
+
+/* =====================================================
+   Drawer
+===================================================== */
+function setDrawer(open) {
+  state.drawer = open;
+  app.classList.toggle('dr-open', open);
+  $('#drawer').inert = !open;
+  if (!open && state.searching) { state.searching = false; state.query = ''; renderDrawerHead(); renderDrawerList(); }
+}
+const NAV = [
+  { id: 'images', label: 'تصاویر', icon: 'images' },
+  { id: 'library', label: 'کتابخانه', icon: 'library' },
+  { id: 'projects', label: 'پروژه‌ها', icon: 'folder' },
+  { id: 'tasks', label: 'زمان‌بندی‌شده', icon: 'clock' },
+  { id: 'plugins', label: 'افزونه‌ها', icon: 'plugin' }
+];
+
+function renderDrawerHead() {
+  const h = $('#drHead');
+  if (state.searching) {
+    h.innerHTML = `<label class="dr-search">${icon('search', 20)}<input id="drSearch" type="search" value="${esc(state.query)}" placeholder="جستجو در گفتگوها" autocomplete="off" aria-label="جستجو در گفتگوها"></label><button class="circle" id="searchClose" aria-label="بستن جستجو">${icon('close', 20)}</button>`;
+    setTimeout(() => { const i = $('#drSearch'); if (i) i.focus(); }, 30);
+  } else {
+    h.innerHTML = `<h2>ChatGPT</h2><button class="circle" id="searchBtn" aria-label="جستجو">${icon('search', 22)}</button>`;
+  }
+}
+const itemHTML = (c, withIcon) => `<div class="item${c.id === state.activeId && state.view === 'chat' ? ' active' : ''}" data-id="${c.id}" tabindex="0" role="button">${withIcon ? icon('bubble', 26) : ''}<span class="it">${esc(c.title)}</span><button class="dots-btn" type="button" aria-label="گزینه‌ها" data-more="${c.id}">${icon('dots', 18)}</button></div>`;
+
+function renderDrawerList() {
+  const q = state.query.trim().toLowerCase();
+  const match = c => !q || c.title.toLowerCase().includes(q) || c.messages.some(m => m.content.toLowerCase().includes(q));
+  const all = state.conversations.filter(c => !c.temp).sort((a, b) => b.updatedAt - a.updatedAt);
+  const pinned = all.filter(c => c.pinned && !c.archived && match(c));
+  const recent = all.filter(c => !c.pinned && !c.archived && match(c));
+  const arch = all.filter(c => c.archived && match(c));
+  const archAll = all.filter(c => c.archived).length;
+  let h = '';
+  if (!q) h += NAV.map(n => `<button class="nav-item${state.view === n.id ? ' on' : ''}" type="button" data-view="${n.id}">${icon(n.icon, 26)}<span>${n.label}</span></button>`).join('');
+  if (pinned.length) h += `<h3 class="dr-sec">سنجاق شد</h3>` + pinned.map(c => itemHTML(c, true)).join('');
+  h += `<h3 class="dr-sec">${q ? 'نتایج جستجو' : 'اخیر'}</h3>`;
+  h += recent.length ? recent.map(c => itemHTML(c, false)).join('') : (pinned.length && !q ? '' : `<div class="dr-empty">${q ? 'نتیجه‌ای پیدا نشد.' : 'هنوز گفتگویی ندارید.'}</div>`);
+  if (archAll) {
+    const show = state.showArchived || (q && arch.length);
+    h += `<button class="arch-toggle" id="archToggle" type="button" aria-expanded="${!!show}">${icon('archive', 16)}<span>بایگانی‌شده‌ها (${fa.format(archAll)})</span></button>`;
+    if (show) h += arch.map(c => itemHTML(c, false)).join('');
+  }
+  $('#drList').innerHTML = h;
+}
+
+const convMenu = c => [
+  { label: c.pinned ? 'برداشتن سنجاق' : 'سنجاق کردن', icon: 'pin', onClick: () => { c.pinned = !c.pinned; persist(); renderDrawerList(); } },
+  { label: 'تغییر نام', icon: 'pencil', onClick: () => renameConv(c.id) },
+  c.archived ? { label: 'خارج کردن از بایگانی', icon: 'archive', onClick: () => unarchiveConv(c.id) }
+             : { label: 'بایگانی', icon: 'archive', onClick: () => archiveConv(c.id) },
+  { label: 'حذف', icon: 'trash', danger: true, onClick: () => deleteConv(c.id) }
+];
+
+/* long-press / right-click / hover dots */
+let lpTimer = null, lpFired = false, lpStart = null;
+const drList = $('#drList');
+drList.addEventListener('pointerdown', e => {
+  const it = e.target.closest('.item'); if (!it || e.target.closest('.dots-btn')) return;
+  lpFired = false; lpStart = { x: e.clientX, y: e.clientY };
+  clearTimeout(lpTimer);
+  lpTimer = setTimeout(() => {
+    lpFired = true;
+    const c = getConv(it.dataset.id); if (c) { if (navigator.vibrate) navigator.vibrate(12); openMenu(it, convMenu(c), { align: 'end' }); }
+  }, 480);
+});
+const cancelLp = () => clearTimeout(lpTimer);
+drList.addEventListener('pointerup', cancelLp);
+drList.addEventListener('pointercancel', cancelLp);
+drList.addEventListener('pointermove', e => { if (lpStart && Math.hypot(e.clientX - lpStart.x, e.clientY - lpStart.y) > 10) cancelLp(); });
+drList.addEventListener('contextmenu', e => {
+  const it = e.target.closest('.item'); if (!it) return;
+  e.preventDefault(); cancelLp(); lpFired = true;
+  const c = getConv(it.dataset.id); if (c) openMenu(it, convMenu(c), { align: 'end' });
+});
+drList.addEventListener('click', e => {
+  if (lpFired) { lpFired = false; return; }
+  const more = e.target.closest('.dots-btn');
+  if (more) { const c = getConv(more.dataset.more); if (c) openMenu(more, convMenu(c), { align: 'end' }); return; }
+  const nav = e.target.closest('[data-view]');
+  if (nav) { setView(nav.dataset.view); return; }
+  if (e.target.closest('#archToggle')) { state.showArchived = !state.showArchived; renderDrawerList(); return; }
+  const it = e.target.closest('.item'); if (it) selectConv(it.dataset.id);
+});
+drList.addEventListener('keydown', e => { if (e.key === 'Enter') { const it = e.target.closest('.item'); if (it) selectConv(it.dataset.id); } });
+
+$('#drHead').addEventListener('click', e => {
+  if (e.target.closest('#searchBtn')) { state.searching = true; renderDrawerHead(); renderDrawerList(); }
+  if (e.target.closest('#searchClose')) { state.searching = false; state.query = ''; renderDrawerHead(); renderDrawerList(); }
+});
+$('#drHead').addEventListener('input', e => { if (e.target.id === 'drSearch') { state.query = e.target.value; renderDrawerList(); } });
+$('#menuBtn').addEventListener('click', () => setDrawer(true));
+$('#scrim').addEventListener('click', () => setDrawer(false));
+$('#newChat').addEventListener('click', () => newChat());
+
+/* =====================================================
+   Conversation ops
+===================================================== */
+function pruneEmpty(keepId) {
+  state.conversations = state.conversations.filter(c => {
+    if (state.generating && state.generating.convId === c.id) return true;
+    if (c.id === keepId) return true;
+    if (c.temp) return false;
+    return c.messages.length > 0;
+  });
+}
+function setTemp(on) {
+  state.temp = on;
+  $('#tempBtn').classList.toggle('on', on);
+  $('#tempBtn').setAttribute('aria-pressed', String(on));
+  $('#tempLabel').hidden = !on;
+  $('#plusPill').hidden = on;
+}
+function newChat(opts = {}) {
+  setDrawer(false);
+  state.view = 'chat';
+  if (state.temp && !opts.keepTemp) setTemp(false);
+  let c;
+  if (state.temp) {
+    c = { id: uid(), title: 'چت موقت', temp: true, messages: [], createdAt: Date.now(), updatedAt: Date.now(), archived: false };
+    state.conversations.unshift(c);
+  } else {
+    c = state.conversations.find(x => !x.archived && !x.temp && !x.messages.length);
+    if (!c) {
+      c = { id: uid(), title: 'چت جدید', messages: [], createdAt: Date.now(), updatedAt: Date.now(), archived: false };
+      state.conversations.unshift(c);
+    }
+  }
+  state.activeId = c.id;
+  pruneEmpty(c.id);
+  ta.value = ''; state.attachments = []; state.deep = false; renderChips(); autosize();
+  persist(); renderDrawerList(); renderView();
+  if (!opts.noFocus) setTimeout(() => ta.focus(), 50);
+}
+function selectConv(id) {
+  if (state.temp) setTemp(false);
+  state.activeId = id; state.view = 'chat'; pruneEmpty(id);
+  persist(); renderDrawerList(); renderView(); setDrawer(false);
+}
+function setView(v) {
+  state.view = v; setDrawer(false); renderDrawerList(); renderView();
+}
+async function renameConv(id) {
+  const c = getConv(id); if (!c) return;
+  const v = await promptDialog({ title: 'تغییر نام گفتگو', label: 'عنوان جدید', value: c.title });
+  if (v) { c.title = v; persist(); renderDrawerList(); }
+}
+function archiveConv(id) {
+  const c = getConv(id); if (!c) return;
+  c.archived = true; c.pinned = false;
+  if (state.activeId === id) state.activeId = null;
+  persist(); renderDrawerList(); renderView();
+  toast('گفتگو بایگانی شد', { label: 'بازگردانی', fn: () => { c.archived = false; persist(); renderDrawerList(); } });
+}
+function unarchiveConv(id) {
+  const c = getConv(id); if (!c) return;
+  c.archived = false; persist(); renderDrawerList(); toast('گفتگو از بایگانی خارج شد');
+}
+async function deleteConv(id) {
+  const c = getConv(id); if (!c) return;
+  const ok = await confirmDialog({ title: 'حذف گفتگو؟', text: `«${c.title}» برای همیشه حذف می‌شود.`, ok: 'حذف', danger: true });
+  if (!ok) return;
+  if (state.generating && state.generating.convId === id) state.generating.ctrl.abort();
+  state.conversations = state.conversations.filter(x => x.id !== id);
+  if (state.activeId === id) state.activeId = null;
+  persist(); renderDrawerList(); renderView(); toast('گفتگو حذف شد');
+}
+
+/* =====================================================
+   Views
+===================================================== */
+const SUGG = [
+  { ic: 'headphones', t: 'چت صوتی را شروع کنید', voice: true },
+  { ic: 'image', t: 'یک تصویر ایجاد کنید', fill: 'یک تصویر ایجاد کن: ' },
+  { ic: 'pencil', t: 'بنویسید یا ویرایش کنید', fill: 'این متن را بازنویسی کن: ' }
+];
+const emptyHTML = () => `<div class="empty">${state.temp ? `<div class="temp-note">${icon('temp', 40)}<h2>چت موقت</h2><p>این گفتگو در تاریخچه ذخیره نمی‌شود.</p></div>` : ''}<div class="sugg">${SUGG.map((s, i) => `<button type="button" data-sugg="${i}">${icon(s.ic, 26)}<span>${s.t}</span></button>`).join('')}</div></div>`;
+
+function attHTML(list) {
+  if (!list || !list.length) return '';
+  return `<div class="atts">${list.map(a => {
+    const u = blobs.get(a.id);
+    return a.isImage && u ? `<img class="att-img" src="${u}" alt="${esc(a.name)}">` : `<span class="att-file">${icon('clip', 16)}<span>${esc(a.name)}</span></span>`;
+  }).join('')}</div>`;
+}
+function actBtn(act, label, ic, m, on) {
+  return `<button class="act${on ? ' on' : ''}" type="button" data-act="${act}" data-id="${m.id}" aria-label="${label}" title="${label}">${icon(ic, 19)}</button>`;
+}
+function msgHTML(m) {
+  const t = fmtTime(m.time);
+  if (m.role === 'user')
+    return `<div class="msg user" data-id="${m.id}">${attHTML(m.attachments)}${m.content ? `<div class="bubble" dir="auto">${esc(m.content)}</div>` : ''}<span class="msg-time">${t}</span></div>`;
+  const streaming = state.streamingId === m.id;
+  return `<div class="msg ai${streaming ? ' streaming' : ''}" data-id="${m.id}"><div class="md" id="md-${m.id}">${renderMarkdown(m.content)}</div><div class="actions">${actBtn('copy', 'کپی', 'copy', m)}${actBtn('like', 'پسندیدم', 'like', m, m.feedback === 'like')}${actBtn('dislike', 'نپسندیدم', 'dislike', m, m.feedback === 'dislike')}${actBtn('regen', 'تولید دوباره', 'regen', m)}${actBtn('share', 'اشتراک‌گذاری', 'share', m)}<span class="msg-time">${t}</span></div></div>`;
+}
+const typingHTML = deep => `<div class="msg ai" id="typing">${deep ? `<div class="thinking"><div class="dots"><i></i><i></i><i></i></div><span>در حال تفکر…</span></div>` : `<div class="dots" role="status" aria-label="در حال نوشتن"><i></i><i></i><i></i></div>`}</div>`;
+
+function renderThread() {
+  const conv = getConv(state.activeId);
+  if (!conv || !conv.messages.length) { scroller.innerHTML = emptyHTML(); return; }
+  const g = state.generating;
+  const showTyping = state.typing && g && g.convId === conv.id;
+  scroller.innerHTML = `<div class="thread" id="thread">${conv.messages.map(msgHTML).join('')}${showTyping ? typingHTML(g.deep) : ''}</div>`;
+  scroller.scrollTop = scroller.scrollHeight;
+}
+
+const PAGE_TITLES = { images: 'تصاویر', library: 'کتابخانه', projects: 'پروژه‌ها', tasks: 'زمان‌بندی‌شده', plugins: 'افزونه‌ها' };
+const PLUGINS = [['web', 'جستجوی وب', 'دسترسی به اطلاعات به‌روز'], ['data', 'تحلیل داده', 'کار با جدول و نمودار'], ['translate', 'مترجم', 'ترجمه‌ی سریع متن'], ['image', 'تصویرساز', 'ساخت تصویر از توضیح']];
+const REPEAT = { once: 'یک‌بار', daily: 'هر روز', weekly: 'هر هفته' };
+const sw = (attr, on) => `<button class="switch" type="button" role="switch" aria-checked="${!!on}" ${attr}><i></i></button>`;
+const emptyPage = (ic, t, d, btn) => `<div class="pg-empty">${icon(ic, 46)}<h3>${t}</h3><p>${d}</p>${btn || ''}</div>`;
+
+function allAttachments() {
+  const out = [];
+  state.conversations.filter(c => !c.temp).forEach(c => c.messages.forEach(m => (m.attachments || []).forEach(a => out.push({ ...a, conv: c }))));
+  return out;
+}
+function pageHTML(v) {
+  let body = '';
+  if (v === 'images') {
+    const imgs = allAttachments().filter(a => a.isImage && blobs.has(a.id));
+    body = imgs.length ? `<div class="img-grid">${imgs.map(a => `<img src="${blobs.get(a.id)}" alt="${esc(a.name)}" data-pg="openConv" data-id="${a.conv.id}">`).join('')}</div>`
+      : emptyPage('images', 'هنوز تصویری ندارید', 'تصاویری که در گفتگوها می‌فرستید اینجا نمایش داده می‌شوند.', `<button class="pill-btn" type="button" data-pg="makeImage">${icon('image', 20)}ایجاد تصویر</button>`);
+  } else if (v === 'library') {
+    const files = allAttachments();
+    body = files.length ? files.map(a => `<div class="row2 link" data-pg="openConv" data-id="${a.conv.id}">${icon(a.isImage ? 'image' : 'clip', 24)}<div class="grow"><div class="t">${esc(a.name)}</div><div class="d">${esc(a.conv.title)}</div></div></div>`).join('')
+      : emptyPage('library', 'کتابخانه خالی است', 'فایل‌هایی که پیوست می‌کنید اینجا جمع می‌شوند.');
+  } else if (v === 'projects') {
+    body = `<button class="add-row" type="button" data-pg="addProject">${icon('plus', 22)}<span>پروژه‌ی جدید</span></button>` +
+      (state.projects.length ? state.projects.map(p => `<div class="row2">${icon('folder', 26)}<div class="grow"><div class="t">${esc(p.name)}</div><div class="d">پروژه</div></div><button class="mini" type="button" data-pg="renameProject" data-id="${p.id}" aria-label="تغییر نام">${icon('pencil', 18)}</button><button class="mini" type="button" data-pg="delProject" data-id="${p.id}" aria-label="حذف">${icon('trash', 18)}</button></div>`).join('')
+        : emptyPage('folder', 'پروژه‌ای وجود ندارد', 'برای نگه‌داری گفتگوها و فایل‌های مرتبط، یک پروژه بسازید.'));
+  } else if (v === 'tasks') {
+    body = `<button class="add-row" type="button" data-pg="addTask">${icon('plus', 22)}<span>یادآوری جدید</span></button>` +
+      (state.tasks.length ? state.tasks.map(t => `<div class="row2">${icon('clock', 26)}<div class="grow"><div class="t">${esc(t.title)}</div><div class="d">${REPEAT[t.repeat]} · ساعت ${esc(new Date('2000-01-01T' + t.time).toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' }))}</div></div>${sw(`data-pg="toggleTask" data-id="${t.id}"`, t.on)}<button class="mini" type="button" data-pg="delTask" data-id="${t.id}" aria-label="حذف">${icon('trash', 18)}</button></div>`).join('')
+        : emptyPage('clock', 'کار زمان‌بندی‌شده‌ای ندارید', 'یک یادآوری بسازید تا در زمان مقرر اعلان بگیرید (فقط وقتی این صفحه باز است).'));
+  } else if (v === 'plugins') {
+    body = PLUGINS.map(([k, n, d]) => `<div class="row2">${icon('plugin', 26)}<div class="grow"><div class="t">${n}</div><div class="d">${d}</div></div>${sw(`data-pg="togglePlugin" data-k="${k}"`, state.plugins[k])}</div>`).join('');
+  }
+  return `<div class="page"><h1>${PAGE_TITLES[v]}</h1>${body}</div>`;
+}
+function renderView() {
+  $('#composerArea').hidden = state.view !== 'chat';
+  if (state.view === 'chat') renderThread();
+  else { scroller.innerHTML = pageHTML(state.view); scroller.scrollTop = 0; }
+}
+
+function taskDialog() {
+  const now = new Date();
+  const hm = String(now.getHours()).padStart(2, '0') + ':' + String(Math.min(59, now.getMinutes() + 1)).padStart(2, '0');
+  const m = openModal({ cls: 'small', html: `<div class="dlg-body"><h3>یادآوری جدید</h3><label for="tkT">عنوان</label><input class="text-input" id="tkT" maxlength="60" autofocus placeholder="مثلاً مرور پروژه"><label for="tkH">ساعت</label><input class="text-input" id="tkH" type="time" value="${hm}"><label for="tkR">تکرار</label><select class="sel" id="tkR"><option value="once">یک‌بار</option><option value="daily">هر روز</option><option value="weekly">هر هفته</option></select></div><div class="dlg-foot"><button class="btn solid" data-r="1" type="button">ذخیره</button><button class="btn" data-r="0" type="button">انصراف</button></div>` });
+  m.el.addEventListener('click', e => {
+    const b = e.target.closest('[data-r]'); if (!b) return;
+    if (b.dataset.r === '1') {
+      const title = $('#tkT', m.el).value.trim(), time = $('#tkH', m.el).value;
+      if (!title || !time) { toast('عنوان و ساعت را وارد کنید'); return; }
+      state.tasks.push({ id: uid(), title, time, repeat: $('#tkR', m.el).value, day: new Date().getDay(), on: true, last: '' });
+      persistExtras(); renderView(); toast('یادآوری ذخیره شد');
+    }
+    m.close();
+  });
+}
+setInterval(() => {
+  const now = new Date();
+  const hm = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+  const key = now.toDateString() + hm;
+  let changed = false;
+  state.tasks.forEach(t => {
+    if (!t.on || t.time !== hm || t.last === key) return;
+    if (t.repeat === 'weekly' && t.day !== now.getDay()) return;
+    t.last = key; changed = true; toast('یادآوری: ' + t.title);
+    if (t.repeat === 'once') t.on = false;
+  });
+  if (changed) { persistExtras(); if (state.view === 'tasks') renderView(); }
+}, 15000);
+
+/* =====================================================
+   Scroller events (suggestions, pages, message actions)
+===================================================== */
+scroller.addEventListener('click', async e => {
+  const sg = e.target.closest('[data-sugg]');
+  if (sg) {
+    const s = SUGG[+sg.dataset.sugg];
+    if (s.voice) openVoice(); else { ta.value = s.fill; autosize(); ta.focus(); }
+    return;
+  }
+  const pg = e.target.closest('[data-pg]');
+  if (pg) { await pageAction(pg); return; }
+
+  const cb = e.target.closest('.cb-copy');
+  if (cb) {
+    const code = $('code', cb.closest('.codeblock')).textContent;
+    if (await copyText(code)) {
+      cb.innerHTML = `${icon('check', 15)}<span>کپی شد</span>`;
+      setTimeout(() => { cb.innerHTML = `${icon('copy', 15)}<span>کپی کد</span>`; }, 1600);
+    }
+    return;
+  }
+  const b = e.target.closest('.act');
+  if (!b) return;
+  const conv = getConv(state.activeId); if (!conv) return;
+  const idx = conv.messages.findIndex(m => m.id === b.dataset.id); if (idx < 0) return;
+  const m = conv.messages[idx];
+  switch (b.dataset.act) {
+    case 'copy':
+      if (await copyText(m.content)) { b.innerHTML = icon('check', 19); setTimeout(() => { b.innerHTML = icon('copy', 19); }, 1500); }
+      break;
+    case 'like': case 'dislike': {
+      const act = b.dataset.act;
+      m.feedback = m.feedback === act ? null : act; persist();
+      const row = b.parentElement;
+      $('[data-act="like"]', row).classList.toggle('on', m.feedback === 'like');
+      $('[data-act="dislike"]', row).classList.toggle('on', m.feedback === 'dislike');
+      if (m.feedback) toast('از بازخورد شما سپاسگزاریم');
+      break;
+    }
+    case 'regen':
+      if (state.generating) { toast('ابتدا تولید پاسخ فعلی را متوقف کنید'); break; }
+      conv.messages.splice(idx); persist(); generate(conv.id);
+      break;
+    case 'share':
+      if (navigator.share) { try { await navigator.share({ text: m.content }); break; } catch (err) { if (err.name === 'AbortError') break; } }
+      if (await copyText(m.content)) toast('متن پاسخ برای اشتراک‌گذاری کپی شد');
+      break;
+  }
+});
+
+async function pageAction(el) {
+  const a = el.dataset.pg, id = el.dataset.id;
+  switch (a) {
+    case 'openConv': selectConv(id); break;
+    case 'makeImage': newChat({ noFocus: true }); ta.value = 'یک تصویر ایجاد کن: '; autosize(); ta.focus(); break;
+    case 'addProject': {
+      const v = await promptDialog({ title: 'پروژه‌ی جدید', label: 'نام پروژه', ok: 'ساخت' });
+      if (v) { state.projects.unshift({ id: uid(), name: v }); persistExtras(); renderView(); }
+      break;
+    }
+    case 'renameProject': {
+      const p = state.projects.find(x => x.id === id); if (!p) break;
+      const v = await promptDialog({ title: 'تغییر نام پروژه', label: 'نام جدید', value: p.name });
+      if (v) { p.name = v; persistExtras(); renderView(); }
+      break;
+    }
+    case 'delProject': {
+      const p = state.projects.find(x => x.id === id); if (!p) break;
+      if (await confirmDialog({ title: 'حذف پروژه؟', text: `«${p.name}» حذف می‌شود.`, ok: 'حذف', danger: true })) { state.projects = state.projects.filter(x => x.id !== id); persistExtras(); renderView(); }
+      break;
+    }
+    case 'addTask': taskDialog(); break;
+    case 'toggleTask': { const t = state.tasks.find(x => x.id === id); if (t) { t.on = !t.on; persistExtras(); renderView(); } break; }
+    case 'delTask': state.tasks = state.tasks.filter(x => x.id !== id); persistExtras(); renderView(); break;
+    case 'togglePlugin': state.plugins[el.dataset.k] = !state.plugins[el.dataset.k]; persistExtras(); renderView(); break;
+  }
+}
+
+/* =====================================================
+   Composer: attachments, chips, send, generate
+===================================================== */
+function renderChips() {
+  const c = $('#chips');
+  const parts = state.attachments.map(a => {
+    const u = blobs.get(a.id);
+    return a.isImage && u
+      ? `<div class="chip img"><img src="${u}" alt="${esc(a.name)}"><button type="button" data-rm="${a.id}" aria-label="حذف پیوست">${icon('close', 12)}</button></div>`
+      : `<div class="chip">${icon('clip', 16)}<span class="n">${esc(a.name)}</span><button type="button" data-rm="${a.id}" aria-label="حذف پیوست">${icon('close', 12)}</button></div>`;
+  });
+  if (state.deep) parts.push(`<div class="chip deep">${icon('gauge', 16)}<span>تفکر عمیق‌تر</span><button type="button" data-rm="deep" aria-label="خاموش کردن">${icon('close', 12)}</button></div>`);
+  c.innerHTML = parts.join('');
+  c.hidden = !parts.length;
+  updateComposer();
+}
+$('#chips').addEventListener('click', e => {
+  const b = e.target.closest('[data-rm]'); if (!b) return;
+  if (b.dataset.rm === 'deep') state.deep = false;
+  else state.attachments = state.attachments.filter(a => a.id !== b.dataset.rm);
+  renderChips();
+});
+function addFiles(list) {
+  for (const f of list) {
+    if (state.attachments.length >= 6) { toast('حداکثر ۶ پیوست مجاز است'); break; }
+    const id = uid();
+    blobs.set(id, URL.createObjectURL(f));
+    state.attachments.push({ id, name: f.name || 'تصویر', isImage: f.type.startsWith('image/') });
+  }
+  renderChips();
+}
+['fileAny', 'fileImg', 'fileCam'].forEach(id => $('#' + id).addEventListener('change', e => { addFiles(e.target.files); e.target.value = ''; }));
+function toggleDeep() { state.deep = !state.deep; renderChips(); toast(state.deep ? 'تفکر عمیق‌تر روشن شد' : 'تفکر عمیق‌تر خاموش شد'); }
+
+function autosize() {
+  ta.style.height = 'auto';
+  ta.style.height = Math.min(Math.max(ta.scrollHeight, 36), 160) + 'px';
+  updateComposer();
+}
+function updateComposer() {
+  const has = ta.value.trim().length > 0 || state.attachments.length > 0;
+  const gen = !!state.generating;
+  micBtn.hidden = has || gen;
+  wave.innerHTML = gen ? icon('stop', 18) : has ? icon('send', 20) : icon('wave', 22);
+  wave.setAttribute('aria-label', gen ? 'توقف' : has ? 'ارسال' : 'حالت صوتی');
+}
+
+function send() {
+  const text = ta.value.trim();
+  if ((!text && !state.attachments.length) || state.generating) return;
+  let conv = getConv(state.activeId);
+  if (!conv) {
+    conv = { id: uid(), title: 'چت جدید', temp: state.temp || undefined, messages: [], createdAt: Date.now(), updatedAt: Date.now(), archived: false };
+    state.conversations.unshift(conv); state.activeId = conv.id;
+  }
+  const label = text || (state.attachments[0] && state.attachments[0].name) || 'گفتگو';
+  if (!conv.messages.length && !conv.temp) conv.title = label.length > 34 ? label.slice(0, 34).trim() + '…' : label;
+  conv.messages.push({ id: uid(), role: 'user', content: text, time: Date.now(), attachments: state.attachments.slice() });
+  conv.updatedAt = Date.now();
+  const deep = state.deep;
+  state.attachments = []; state.deep = false; renderChips();
+  pruneEmpty(conv.id);
+  ta.value = ''; autosize();
+  persist(); renderDrawerList();
+  generate(conv.id, deep);
+}
+
+async function generate(convId, deep = false) {
+  const conv = getConv(convId); if (!conv) return;
+  const ctrl = new AbortController();
+  state.generating = { convId, ctrl, deep }; state.typing = true;
+  updateComposer();
+  if (state.activeId === convId && state.view === 'chat') renderThread();
+  let msg = null;
+  try {
+    const text = await AIService.reply(conv.messages.map(({ role, content, attachments }) => ({ role, content, attachments })), { signal: ctrl.signal, deep });
+    msg = { id: uid(), role: 'assistant', content: '', time: Date.now(), feedback: null };
+    state.typing = false; state.streamingId = msg.id;
+    conv.messages.push(msg);
+    if (state.activeId === convId && state.view === 'chat') renderThread();
+    await stream(msg, text, ctrl.signal, convId);
+  } catch (err) {
+    if (err.name !== 'AbortError') { console.error(err); toast('تولید پاسخ با خطا روبه‌رو شد'); }
+  } finally {
+    state.typing = false; state.streamingId = null; state.generating = null;
+    if (msg && !msg.content) conv.messages = conv.messages.filter(x => x !== msg);
+    conv.updatedAt = Date.now();
+    persist(); updateComposer(); renderDrawerList();
+    if (state.activeId === convId && state.view === 'chat') renderThread();
+  }
+}
+async function stream(msg, text, signal, convId) {
+  let i = 0;
+  while (i < text.length) {
+    if (signal.aborted) throw new DOMException('Aborted', 'AbortError');
+    i = Math.min(text.length, i + 3 + Math.floor(Math.random() * 4));
+    msg.content = text.slice(0, i);
+    if (state.activeId === convId && state.view === 'chat') {
+      const el = document.getElementById('md-' + msg.id);
+      if (el) {
+        const near = scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < 140;
+        el.innerHTML = renderMarkdown(msg.content);
+        if (near) scroller.scrollTop = scroller.scrollHeight;
+      }
+    }
+    await wait(18, signal);
+  }
+}
+
+ta.addEventListener('input', autosize);
+ta.addEventListener('keydown', e => {
+  if (e.key !== 'Enter' || e.isComposing) return;
+  const go = state.settings.enterToSend ? !e.shiftKey : (e.ctrlKey || e.metaKey);
+  if (go) { e.preventDefault(); send(); }
+});
+wave.addEventListener('click', () => {
+  if (state.generating) { state.generating.ctrl.abort(); return; }
+  if (ta.value.trim() || state.attachments.length) send(); else openVoice();
+});
+
+/* ---------- + sheet ---------- */
+let sheetEl = null;
+function closeSheet() { if (sheetEl) { sheetEl.remove(); sheetEl = null; $('#plus').classList.remove('open'); } }
+function openSheet() {
+  if (sheetEl) return closeSheet();
+  const items = [
+    ['camera', 'دوربین', () => $('#fileCam').click()],
+    ['image', 'عکس‌ها', () => $('#fileImg').click()],
+    ['clip', 'فایل‌ها', () => $('#fileAny').click()],
+    ['plugin', 'افزونه‌ها', () => setView('plugins')],
+    ['gauge', state.deep ? 'خاموش کردن تفکر عمیق‌تر' : 'تفکر عمیق‌تر', toggleDeep]
+  ];
+  const back = document.createElement('div');
+  back.className = 'sheet-back';
+  back.innerHTML = `<div class="sheet" role="menu">${items.map((it, i) => `<button class="sheet-row" role="menuitem" type="button" data-i="${i}"><span class="sheet-ic">${icon(it[0], 26)}</span><span>${it[1]}</span></button>`).join('')}</div>`;
+  document.body.appendChild(back);
+  const sh = back.firstElementChild, r = $('#composer').getBoundingClientRect();
+  sh.style.right = Math.max(8, innerWidth - r.right) + 'px';
+  sh.style.bottom = Math.max(8, innerHeight - r.bottom - 6) + 'px';
+  back.addEventListener('pointerdown', e => { if (e.target === back) closeSheet(); });
+  sh.addEventListener('click', e => {
+    const b = e.target.closest('.sheet-row'); if (!b) return;
+    const it = items[+b.dataset.i]; closeSheet(); it[2]();
+  });
+  $('#plus').classList.add('open');
+  sheetEl = back;
+}
+$('#plus').addEventListener('click', openSheet);
+
+/* ---------- dictation + voice mode ---------- */
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let dictation = null;
+micBtn.addEventListener('click', () => {
+  if (!SR) { toast('مرورگر شما از تایپ با صدا پشتیبانی نمی‌کند'); return; }
+  if (dictation) { dictation.stop(); return; }
+  const base = ta.value;
+  const r = new SR(); r.lang = 'fa-IR'; r.interimResults = true;
+  r.onresult = e => {
+    let t = ''; for (const res of e.results) t += res[0].transcript;
+    ta.value = base + (base && !/\s$/.test(base) ? ' ' : '') + t; autosize();
+  };
+  r.onerror = ev => { if (ev.error !== 'aborted' && ev.error !== 'no-speech') toast('تشخیص گفتار ناموفق بود'); };
+  r.onend = () => { dictation = null; micBtn.classList.remove('rec'); };
+  try { r.start(); dictation = r; micBtn.classList.add('rec'); } catch { toast('شروع میکروفون ممکن نشد'); }
+});
+
+let voiceEl = null, voiceRec = null, voiceMuted = false, voiceText = '';
+function openVoice() {
+  if (voiceEl) return;
+  setDrawer(false);
+  voiceEl = document.createElement('div');
+  voiceEl.className = 'voice';
+  voiceEl.innerHTML = `<div class="v-top"><button class="circle" id="vClose" aria-label="بستن">${icon('close', 22)}</button></div><div class="v-mid"><div class="orb" id="orb"></div><p id="vStatus">در حال گوش دادن…</p></div><div class="v-bar"><button class="circle" id="vMute" aria-label="قطع/وصل میکروفون">${icon('mic', 26)}</button><button class="circle end" id="vEnd" aria-label="پایان">${icon('close', 26)}</button></div>`;
+  document.body.appendChild(voiceEl);
+  voiceMuted = false; voiceText = '';
+  $('#vClose').onclick = $('#vEnd').onclick = closeVoice;
+  $('#vMute').onclick = () => { voiceMuted ? startVoiceRec() : stopVoiceRec(true); };
+  startVoiceRec();
+}
+function setVoiceUI(muted, msg) {
+  voiceMuted = muted;
+  if (!voiceEl) return;
+  $('#orb').classList.toggle('muted', muted);
+  $('#vMute').classList.toggle('on', muted);
+  if (msg !== undefined) $('#vStatus').textContent = msg;
+}
+function startVoiceRec() {
+  if (!SR) { setVoiceUI(true, 'مرورگر شما از تشخیص گفتار پشتیبانی نمی‌کند.'); return; }
+  const r = new SR(); r.lang = 'fa-IR'; r.interimResults = true;
+  voiceText = ''; setVoiceUI(false, 'در حال گوش دادن…');
+  r.onresult = e => { let t = ''; for (const res of e.results) t += res[0].transcript; voiceText = t; if (voiceEl) $('#vStatus').textContent = t; };
+  r.onerror = ev => { if (ev.error === 'not-allowed') setVoiceUI(true, 'اجازه‌ی دسترسی به میکروفون داده نشده است.'); };
+  r.onend = () => {
+    if (voiceRec !== r) return;
+    voiceRec = null;
+    if (!voiceEl) return;
+    if (voiceText.trim()) { const t = voiceText.trim(); closeVoice(); ta.value = t; autosize(); send(); }
+    else if (!voiceMuted) setVoiceUI(true, 'چیزی شنیده نشد. روی میکروفون بزنید.');
+  };
+  try { r.start(); voiceRec = r; } catch { setVoiceUI(true, 'شروع میکروفون ممکن نشد.'); }
+}
+function stopVoiceRec(mute) {
+  const r = voiceRec; voiceRec = null;
+  if (r) { try { r.abort(); } catch {} }
+  if (mute) setVoiceUI(true, 'میکروفون بی‌صدا است.');
+}
+function closeVoice() {
+  stopVoiceRec(false);
+  if (voiceEl) { voiceEl.remove(); voiceEl = null; }
+}
+
+/* =====================================================
+   Header buttons
+===================================================== */
+$('#tempBtn').addEventListener('click', () => {
+  if (state.temp) {
+    setTemp(false);
+    state.conversations = state.conversations.filter(c => !c.temp);
+    state.activeId = null; newChat({ noFocus: true });
+    toast('چت موقت بسته شد');
+  } else {
+    setTemp(true); newChat({ keepTemp: true });
+    toast('چت موقت روشن شد؛ گفتگو ذخیره نمی‌شود');
+  }
+});
+$('#plusPill').addEventListener('click', openPlusDialog);
+function openPlusDialog() {
+  const m = openModal({ cls: 'small', html: `<div class="dlg-body"><h3>ChatGPT Plus</h3><p>پاسخ‌های سریع‌تر و دسترسی بیشتر به امکانات:</p><ul class="plus-list"><li>${icon('check', 20)}<span>محدودیت پیام بیشتر</span></li><li>${icon('check', 20)}<span>تفکر عمیق‌تر برای سؤال‌های سخت</span></li><li>${icon('check', 20)}<span>ساخت تصویر و تحلیل فایل</span></li></ul><p style="font-size:13px;color:var(--muted)">پرداخت در این نسخه‌ی نمایشی فعال نیست.</p></div><div class="dlg-foot"><button class="btn solid" data-r="1" type="button">ارتقا به Plus</button><button class="btn" data-r="0" type="button">بعداً</button></div>` });
+  m.el.addEventListener('click', e => {
+    const b = e.target.closest('[data-r]'); if (!b) return;
+    m.close(); if (b.dataset.r === '1') toast('پرداخت در نسخه‌ی نمایشی فعال نیست');
+  });
+}
+
+/* =====================================================
+   Profile menu, help, settings
+===================================================== */
+function profileItems() {
+  const items = [];
+  if (state.user) items.push({ label: 'خروج از حساب', icon: 'logout', onClick: logout });
+  else items.push({ label: 'ورود / ثبت‌نام با Google', icon: 'login', onClick: showAuth });
+  items.push(
+    { label: 'تنظیمات', icon: 'settings', onClick: () => openSettings('general') },
+    { label: 'تغییر ظاهر', icon: isDark() ? 'sun' : 'moon', onClick: () => setSetting('theme', isDark() ? 'light' : 'dark', true) },
+    { label: 'راهنما', icon: 'help', onClick: openHelp }
+  );
+  if (state.user) items.splice(0, 1, items[0]);
+  return items;
+}
+$('#avatarBtn').addEventListener('click', e => {
+  const u = state.user;
+  openMenu(e.currentTarget, profileItems(), { align: 'end', header: u ? `${u.name}${u.email ? ' · ' + u.email : ''}` : 'مهمان' });
+});
+function openHelp() {
+  const m = openModal({ cls: 'wide', html: `<div class="dlg-head"><h3>راهنما</h3><button class="circle" data-close type="button" aria-label="بستن"><span data-icon="close" data-size="20"></span></button></div><div class="dlg-body"><h3>میانبرها</h3><div class="kv"><kbd>Enter</kbd><span>ارسال پیام (قابل تغییر در تنظیمات)</span><kbd>Shift + Enter</kbd><span>رفتن به خط بعد</span><kbd>Esc</kbd><span>بستن منو و پنجره‌ها</span></div><h3 style="margin-top:22px">نکته‌ها</h3><p>روی یک گفتگو در منو نگه دارید (یا کلیک راست کنید) تا سنجاق، تغییر نام، بایگانی و حذف را ببینید.</p><p>پاسخ‌ها ساختگی‌اند. کلمه‌هایی مثل «پایتون»، «جدول» یا «نمونه» را بنویسید تا پاسخ‌های متفاوت را ببینید.</p></div><div class="dlg-foot"><button class="btn solid" data-close type="button">متوجه شدم</button></div>` });
+  m.el.addEventListener('click', e => { if (e.target.closest('[data-close]')) m.close(); });
+}
+
+function openSettings(section = 'general') {
+  const SEC = [['general', 'عمومی', 'sliders'], ['appearance', 'ظاهر', 'sun'], ['chat', 'چت', 'chat'], ['account', 'حساب', 'user'], ['privacy', 'حریم خصوصی', 'lock'], ['about', 'درباره', 'info']];
+  let cur = section;
+  const swc = key => `<button class="switch" type="button" role="switch" aria-checked="${!!state.settings[key]}" data-set="${key}"><i></i></button>`;
+  const row = (t, d, ctl) => `<div class="row"><div><div class="row-title">${t}</div>${d ? `<div class="row-desc">${d}</div>` : ''}</div>${ctl}</div>`;
+  const pane = () => {
+    const st = state.settings;
+    switch (cur) {
+      case 'general': return row('نام نمایشی مهمان', 'برای حالت مهمان استفاده می‌شود.', `<input class="text-input" id="stName" style="width:190px" maxlength="30" value="${esc(st.userName)}" aria-label="نام نمایشی">`) +
+        row('زبان رابط', 'فعلاً فقط فارسی.', `<span class="row-desc">فارسی</span>`) +
+        row('بازنشانی تنظیمات', 'همه‌ی تنظیمات به پیش‌فرض برمی‌گردد.', `<button class="btn" type="button" data-do="reset">بازنشانی</button>`);
+      case 'appearance': return row('تم', 'روشن، تاریک یا هماهنگ با دستگاه.', `<div class="seg" role="group">${[['light', 'روشن', 'sun'], ['dark', 'تاریک', 'moon'], ['system', 'سیستم', 'monitor']].map(([v, l, ic]) => `<button type="button" data-theme="${v}" class="${st.theme === v ? 'on' : ''}">${icon(ic, 16)}<span>${l}</span></button>`).join('')}</div>`);
+      case 'chat': return row('Enter برای ارسال', 'اگر خاموش باشد، ارسال با Ctrl + Enter است.', swc('enterToSend')) +
+        row('نمایش زمان پیام', 'ساعت زیر هر پیام نشان داده می‌شود.', swc('showTime')) +
+        row('حالت فشرده', 'فاصله‌ی بین پیام‌ها کمتر می‌شود.', swc('compact'));
+      case 'account': {
+        const u = state.user;
+        return row(u ? esc(u.name) : 'وارد نشده‌اید', u ? esc(u.email || 'حساب Google') : 'برای ذخیره‌ی حساب با Google وارد شوید.', u ? `<button class="btn" type="button" data-do="logout">خروج</button>` : `<button class="btn solid" type="button" data-do="login">ورود با Google</button>`) +
+          `<h4>Google Client ID</h4><p class="row-desc" style="margin:4px 0 8px">برای ورود واقعی، یک «OAuth Client ID» از Google Cloud Console (نوع Web) بسازید و آدرسی را که صفحه از آن باز می‌شود (مثلاً http://localhost:8000) در Authorized JavaScript origins ثبت کنید. روی file:// کار نمی‌کند.</p><input class="text-input" id="stCid" dir="ltr" placeholder="xxxxxxxx.apps.googleusercontent.com" value="${esc(st.googleClientId || GOOGLE_CLIENT_ID)}" aria-label="Google Client ID">`;
+      }
+      case 'privacy': return row('ذخیره‌ی تاریخچه', 'گفتگوها فقط در همین مرورگر ذخیره می‌شوند. با خاموش کردن آن چیزی باقی نمی‌ماند.', swc('saveHistory')) +
+        row('بایگانی همه‌ی گفتگوها', '', `<button class="btn" type="button" data-do="archiveAll">بایگانی</button>`) +
+        row('حذف همه‌ی گفتگوها', 'این کار قابل بازگشت نیست.', `<button class="btn danger" type="button" data-do="deleteAll">حذف همه</button>`);
+      case 'about': return `<h4>ChatGPT (نسخه‌ی رابط کاربری)</h4><p class="row-desc" style="font-size:14px;margin-top:8px">این برنامه کاملاً در مرورگر اجرا می‌شود و به هیچ مدل هوش مصنوعی یا سرور متصل نیست؛ پاسخ‌ها ساختگی‌اند.</p>` + row('نسخه', '', `<span class="row-desc">۲٫۰٫۰</span>`) + row('ذخیره‌سازی', '', `<span class="row-desc">LocalStorage</span>`);
+    }
+  };
+  const m = openModal({ cls: 'settings', html: `<div class="dlg-head"><h3>تنظیمات</h3><button class="circle" data-close type="button" aria-label="بستن"><span data-icon="close" data-size="20"></span></button></div><div class="st-wrap"><div class="st-nav" role="tablist"></div><div class="st-pane"></div></div>` });
+  const nav = $('.st-nav', m.el), paneEl = $('.st-pane', m.el);
+  const draw = () => {
+    nav.innerHTML = SEC.map(([id, l, ic]) => `<button type="button" role="tab" data-sec="${id}" class="${cur === id ? 'on' : ''}" aria-selected="${cur === id}">${icon(ic, 18)}<span>${l}</span></button>`).join('');
+    paneEl.innerHTML = pane();
+  };
+  draw();
+  m.el.addEventListener('click', async e => {
+    if (e.target.closest('[data-close]')) return m.close();
+    const sec = e.target.closest('[data-sec]');
+    if (sec) { cur = sec.dataset.sec; return draw(); }
+    const s = e.target.closest('.switch');
+    if (s) {
+      const k = s.dataset.set; setSetting(k, !state.settings[k]);
+      if (k === 'saveHistory') toast(state.settings.saveHistory ? 'تاریخچه ذخیره می‌شود' : 'تاریخچه دیگر ذخیره نمی‌شود');
+      return draw();
+    }
+    const th = e.target.closest('[data-theme]');
+    if (th) { setSetting('theme', th.dataset.theme, true); return draw(); }
+    const act = e.target.closest('[data-do]'); if (!act) return;
+    const d = act.dataset.do;
+    if (d === 'reset') { state.settings = { ...DEFAULTS }; persist(); applySettings(true); draw(); toast('تنظیمات بازنشانی شد'); }
+    if (d === 'login') { m.close(); showAuth(); }
+    if (d === 'logout') { await logout(); draw(); }
+    if (d === 'archiveAll') {
+      state.conversations.forEach(c => { if (c.messages.length) { c.archived = true; c.pinned = false; } });
+      state.activeId = null; persist(); renderDrawerList(); renderView(); toast('همه‌ی گفتگوها بایگانی شدند');
+    }
+    if (d === 'deleteAll') {
+      if (!await confirmDialog({ title: 'حذف همه‌ی گفتگوها؟', text: 'همه‌ی گفتگوها، شامل بایگانی‌شده‌ها، برای همیشه حذف می‌شوند.', ok: 'حذف همه', danger: true })) return;
+      if (state.generating) state.generating.ctrl.abort();
+      state.conversations = []; state.activeId = null;
+      persist(); renderDrawerList(); renderView(); toast('همه‌ی گفتگوها حذف شدند');
+    }
+  });
+  m.el.addEventListener('input', e => {
+    if (e.target.id === 'stName') setSetting('userName', e.target.value.trim() || 'مهمان');
+    if (e.target.id === 'stCid') setSetting('googleClientId', e.target.value.trim());
+  });
+}
+
+/* =====================================================
+   Auth: Google sign-in
+===================================================== */
+function setUser(u) {
+  state.user = u; write(K.user, u); drop(K.guest);
+  renderAvatar();
+  const a = $('#auth'); if (a) a.remove();
+  toast(`خوش آمدید، ${u.name}`);
+}
+async function logout() {
+  if (!await confirmDialog({ title: 'خروج از حساب؟', text: 'گفتگوهای ذخیره‌شده در همین مرورگر باقی می‌مانند.', ok: 'خروج' })) return;
+  try { if (window.google && google.accounts && google.accounts.id) google.accounts.id.disableAutoSelect(); } catch {}
+  state.user = null; drop(K.user); renderAvatar(); toast('از حساب خارج شدید');
+}
+function showAuth() {
+  if ($('#auth')) return;
+  setDrawer(false);
+  const el = document.createElement('div');
+  el.id = 'auth'; el.className = 'auth';
+  el.innerHTML = `<button class="circle auth-x" type="button" data-a="guest" aria-label="بستن">${icon('close', 20)}</button><div class="auth-box"><div class="auth-logo">${icon('logo', 60)}</div><h1>ورود یا ثبت‌نام</h1><p>برای ذخیره‌ی حساب و دسترسی به همه‌ی امکانات وارد شوید.</p><button class="auth-btn" type="button" data-a="google">${G_SVG}<span>ادامه با Google</span></button><button class="auth-link" type="button" data-a="guest">ادامه به‌عنوان مهمان</button><p class="auth-note">${(state.settings.googleClientId || GOOGLE_CLIENT_ID) ? 'با ادامه، وارد حساب Google خود می‌شوید.' : 'حالت آزمایشی: Client ID تنظیم نشده و ورود Google شبیه‌سازی می‌شود. در تنظیمات ← حساب می‌توانید آن را وارد کنید.'}</p></div>`;
+  document.body.appendChild(el);
+  el.addEventListener('click', e => {
+    const b = e.target.closest('[data-a]'); if (!b) return;
+    if (b.dataset.a === 'guest') { write(K.guest, true); el.remove(); }
+    if (b.dataset.a === 'google') googleLogin();
+  });
+}
+function loadGIS() {
+  return new Promise((res, rej) => {
+    if (window.google && google.accounts && google.accounts.oauth2) return res();
+    const s = document.createElement('script');
+    s.src = 'https://accounts.google.com/gsi/client'; s.async = true;
+    s.onload = res; s.onerror = () => rej(new Error('load'));
+    document.head.appendChild(s);
+  });
+}
+async function googleLogin() {
+  const cid = state.settings.googleClientId || GOOGLE_CLIENT_ID;
+  if (!cid) return demoGoogle();
+  if (location.protocol === 'file:') {
+    openModal({ cls: 'small', html: `<div class="dlg-body"><h3>اجرای فایل از file://</h3><p>ورود واقعی Google روی آدرس file:// کار نمی‌کند. فایل را از یک آدرس http(s) باز کنید؛ مثلاً در پوشه‌ی فایل این دستور را بزنید:</p><p dir="ltr" style="font-family:var(--mono);font-size:13px">python -m http.server 8000</p><p>سپس <span dir="ltr">http://localhost:8000</span> را در Authorized JavaScript origins ثبت کنید.</p></div>` });
+    return;
+  }
+  try { await loadGIS(); } catch { toast('اتصال به Google برقرار نشد؛ اینترنت را بررسی کنید'); return; }
+  const client = google.accounts.oauth2.initTokenClient({
+    client_id: cid, scope: 'openid email profile',
+    callback: async resp => {
+      if (resp.error) { toast('ورود لغو شد یا ناموفق بود'); return; }
+      try {
+        const r = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', { headers: { Authorization: 'Bearer ' + resp.access_token } });
+        const u = await r.json();
+        setUser({ name: u.name || u.email, email: u.email, picture: u.picture, provider: 'google' });
+      } catch { toast('دریافت اطلاعات حساب ناموفق بود'); }
+    },
+    error_callback: () => toast('ورود Google ناموفق بود')
+  });
+  client.requestAccessToken({ prompt: 'select_account' });
+}
+function demoGoogle() {
+  const m = openModal({ cls: 'small', html: `<div class="dlg-body"><h3>ورود با Google (آزمایشی)</h3><p style="font-size:13.5px">Client ID تنظیم نشده است، پس ورود شبیه‌سازی می‌شود و هیچ اطلاعاتی به Google ارسال نمی‌شود.</p><label for="dgN">نام</label><input class="text-input" id="dgN" autofocus maxlength="40" placeholder="نام و نام خانوادگی"><label for="dgE">ایمیل</label><input class="text-input" id="dgE" dir="ltr" type="email" placeholder="you@gmail.com"></div><div class="dlg-foot"><button class="btn solid" data-r="1" type="button">ورود</button><button class="btn" data-r="0" type="button">انصراف</button></div>` });
+  const go = () => {
+    const name = $('#dgN', m.el).value.trim(), email = $('#dgE', m.el).value.trim();
+    if (!name) { toast('نام را وارد کنید'); return; }
+    m.close(); setUser({ name, email, provider: 'demo' });
+  };
+  m.el.addEventListener('click', e => { const b = e.target.closest('[data-r]'); if (!b) return; if (b.dataset.r === '1') go(); else m.close(); });
+  m.el.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing) go(); });
+}
+
+/* =====================================================
+   Global events
+===================================================== */
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  if (openedMenu) return closeMenu();
+  if (sheetEl) return closeSheet();
+  if (modals.length) return modals[modals.length - 1].close();
+  if (voiceEl) return closeVoice();
+  const a = $('#auth'); if (a) { write(K.guest, true); return a.remove(); }
+  if (state.drawer) setDrawer(false);
+});
+
+/* =====================================================
+   Init
+===================================================== */
+hydrateIcons();
+applySettings(false);
+setDrawer(false);
+renderDrawerHead();
+renderDrawerList();
+renderView();
+renderChips();
+autosize();
+persist();
+if (!state.user && !read(K.guest, false)) showAuth();
+})();
+</script>
+</body>
+</html>
